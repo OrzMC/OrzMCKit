@@ -13,8 +13,8 @@ let package = Package(
         .library(name: "Fabric", targets: ["Fabric"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/wangzhizhou/MojangAPI.git", from: "0.1.1"),
-        .package(url: "https://github.com/wangzhizhou/PaperMC.git", from: "0.0.8"),
+        .package(url: "https://github.com/OrzMC/MojangAPI.git", from: "0.1.1"),
+        .package(url: "https://github.com/OrzMC/PaperMC.git", from: "0.0.8"),
         .package(url: "https://github.com/OrzGeeker/OrzSwiftKit.git", from: "0.0.17"),
     ],
     targets: [
