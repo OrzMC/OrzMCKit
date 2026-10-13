@@ -44,6 +44,7 @@ let package = Package(
             .product(name: "DownloadAPI", package: "PaperMC"),
             .product(name: "HangarAPI", package: "PaperMC"),
             .product(name: "Utils", package: "OrzSwiftKit"),
+            .product(name: "RuntimeKit", package: "OrzSwiftKit"),
         ]),
         // MARK: Fabric
         .target(
