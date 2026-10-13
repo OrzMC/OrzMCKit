@@ -150,11 +150,18 @@ public struct PaperServer: Server {
             try jarData.write(to: jarFileURL, options: .atomic)
         }
         
-        let process = try await launchServer(jarFileURL.path(), workDirectory: workDirectory, jarArgs: [
-            "--online-mode=\(serverInfo.onlineMode ? "true" : "false")",
-            "--nojline",
-            "--noconsole"
-        ])
+        let major = await JavaRuntime.javaMajor(forMCVersion: version)
+        let javaExecutable = try await JavaRuntime.ensure(root: GameDir.root, major: major)
+        let process = try await launchServer(
+            jarFileURL.path(),
+            workDirectory: workDirectory,
+            javaExecutable: javaExecutable,
+            jarArgs: [
+                "--online-mode=\(serverInfo.onlineMode ? "true" : "false")",
+                "--nojline",
+                "--noconsole"
+            ]
+        )
         return process
     }
 

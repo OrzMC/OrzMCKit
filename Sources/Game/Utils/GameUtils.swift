@@ -10,12 +10,7 @@ import JokerKits
 import MojangAPI
 
 public struct GameUtils {
-    
-    public static func javaPath() throws -> String {
-        let javaPath = try Shell.runCommand(with: ["which", "java"]).trimmingCharacters(in: .whitespacesAndNewlines)
-        return javaPath
-    }
-    
+
     public static func releases() async -> [String] {
         do {
             return try await Mojang.versions(type: .release).compactMap { $0.id }

@@ -58,12 +58,12 @@ public struct VanillaServer: Server {
     public func start() async throws -> Process? {
         
         guard let version = try await Mojang.manifest().versions.filter({ $0.id == serverInfo.version }).first,
-              let serverVersion = try await version.gameVersion?.downloads.server,
-              let serverVersionURL = URL(string: serverVersion.url)
+              let gameVersion = try await version.gameVersion,
+              let serverVersionURL = URL(string: gameVersion.downloads.server.url)
         else {
             throw VanillaServerError.getServerInfoFailed
         }
-        
+
         let serverJarFileName = serverVersionURL.lastPathComponent
         let serverJarFileDirPath = GameDir.server(version: serverInfo.version, type: GameType.vanilla.rawValue)
         let serverJarFilePath = serverJarFileDirPath.filePath(serverJarFileName)
@@ -72,7 +72,14 @@ public struct VanillaServer: Server {
         
         let progressBar = self.serverInfo.console?.progressBar(title: "正在下载服务端文件")
         try await Downloader.download(serverJarFileItem, progressBar: progressBar)
-        let process = try await launchServer(serverJarFilePath, workDirectory: serverJarFileDirPath)
+
+        let major = Int(gameVersion.javaVersion?.majorVersion ?? Int64(JavaRequirement.defaultMajor))
+        let javaExecutable = try await JavaRuntime.ensure(root: GameDir.root, major: major)
+        let process = try await launchServer(
+            serverJarFilePath,
+            workDirectory: serverJarFileDirPath,
+            javaExecutable: javaExecutable
+        )
         return process
     }
 }

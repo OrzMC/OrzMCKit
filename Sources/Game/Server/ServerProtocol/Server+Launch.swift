@@ -10,7 +10,12 @@ import JokerKits
 
 public extension Server {
     
-    func launchServer(_ filePath: String, workDirectory: GameDir, jarArgs: [String] = []) async throws -> Process {
+    func launchServer(
+        _ filePath: String,
+        workDirectory: GameDir,
+        javaExecutable: String,
+        jarArgs: [String] = []
+    ) async throws -> Process {
         
         var args = [
             "-server",
@@ -59,7 +64,7 @@ public extension Server {
         let eulaFilePath = workDirectory.filePath("eula.txt")
         let propertiesFilePath = workDirectory.filePath("server.properties")
         if !FileManager.default.fileExists(atPath: eulaFilePath) || !FileManager.default.fileExists(atPath: propertiesFilePath) {
-            await Shell.run(path: try GameUtils.javaPath(), args: args + ["--initSettings"], workDirectory: workDirectory.dirPath)
+            await Shell.run(path: javaExecutable, args: args + ["--initSettings"], workDirectory: workDirectory.dirPath)
         }
         let agreeEULA = try modifyEULA(at: eulaFilePath)
         if agreeEULA {
@@ -73,7 +78,7 @@ public extension Server {
         } else {
             self.serverInfo.console?.warning("服务器运行为离线模式")
         }
-        let process = try Shell.run(path: try GameUtils.javaPath(), args: args, workDirectory: workDirectory.dirPath, terminationHandler: nil)
+        let process = try Shell.run(path: javaExecutable, args: args, workDirectory: workDirectory.dirPath, terminationHandler: nil)
         return process
     }
 }
