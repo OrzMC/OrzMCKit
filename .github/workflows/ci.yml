@@ -24,3 +24,22 @@ jobs:
 
       - name: Test
         run: swift test
+
+  conformance:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout parent (fixtures + runner)
+        uses: actions/checkout@v4
+        with:
+          repository: OrzMC/OrzMC
+          path: parent
+
+      - name: Build adapter
+        run: swift build -c debug --product ConformanceAdapter
+
+      - name: Run conformance suite
+        run: |
+          BIN="$(swift build -c debug --show-bin-path)/ConformanceAdapter"
+          python3 parent/scripts/conformance/run.py --adapter "$BIN" --strict

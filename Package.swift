@@ -27,6 +27,16 @@ let package = Package(
             name: "OrzMCTests",
             dependencies: ["OrzMC", "Game"]
         ),
+        // MARK: Conformance adapter (drives parent docs/spec fixtures)
+        .executableTarget(
+            name: "ConformanceAdapter",
+            dependencies: [
+                "Game",
+                "MojangAPI",
+                .product(name: "CacheKit", package: "OrzSwiftKit"),
+                .product(name: "JokerKits", package: "OrzSwiftKit"),
+            ]
+        ),
         // MARK: Game Logic Capsule
         .target(name: "Game", dependencies: [
             "MojangAPI",
