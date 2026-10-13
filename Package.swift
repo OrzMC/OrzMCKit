@@ -25,7 +25,7 @@ let package = Package(
         ),
         .testTarget(
             name: "OrzMCTests",
-            dependencies: ["OrzMC"]
+            dependencies: ["OrzMC", "Game"]
         ),
         // MARK: Game Logic Capsule
         .target(name: "Game", dependencies: [
