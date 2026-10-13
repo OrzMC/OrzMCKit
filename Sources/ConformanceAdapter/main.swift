@@ -177,7 +177,8 @@ func opVerifyArtifact(_ given: [String: Any]) throws -> [String: Any] {
 
 func opCacheDecision(_ given: [String: Any]) -> [String: Any] {
     let mtime = asDouble(given["mtime"]).map { Date(timeIntervalSince1970: $0) }
-    let action = CachePolicy.standard.decide(
+    let policy = CachePolicy(ttl: asDouble(given["ttl"]) ?? CachePolicy.defaultTTL)
+    let action = policy.decide(
         mtime: mtime,
         now: Date(timeIntervalSince1970: asDouble(given["now"]) ?? 0),
         refresh: given["refresh"] as? Bool ?? false,
