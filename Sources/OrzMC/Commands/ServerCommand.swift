@@ -85,6 +85,9 @@ struct ServerCommand: AsyncCommand {
                 _ = try await PaperServer(serverInfo: serverInfo).start()
             case .vanilla:
                 _ = try await VanillaServer(serverInfo: serverInfo).start()
+            case .fabric, .forge:
+                // 显式不支持，不静默（对齐 docs/spec/behavior.md：不支持的类型须明确提示）。
+                console.error("暂未支持的服务端类型: \(type.rawValue)")
             }
         }
         else{
