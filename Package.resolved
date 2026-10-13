@@ -1,5 +1,5 @@
 {
-  "originHash" : "5b0ca3f7d9cc5ed39e9a9f22decd6ba74292f0d6e10cb472eccaf8c24f657e28",
+  "originHash" : "7cb62182268c646316bf5e271fe4d454ee988f4c284fc3648657b3a8673dd261",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/OrzMC/MojangAPI.git",
       "state" : {
-        "revision" : "2fe2a5cd423f1ed0759a4c0d87e27dc59b3977b8",
-        "version" : "0.1.1"
+        "branch" : "main",
+        "revision" : "cb6c0dc905be3cb02c03ff036e74c2914f09c0c3"
       }
     },
     {
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state" : {
-        "revision" : "d40580096b28404f0b126d7b34342f291554f457",
-        "version" : "0.0.17"
+        "branch" : "main",
+        "revision" : "92bb4552d1920fcaae6836a1a16a4b38cb3f0dca"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/OrzMC/PaperMC.git",
       "state" : {
-        "revision" : "5ed83c80d6a3fef34deae4bac2a5734a1db62cf1",
-        "version" : "0.0.9"
+        "branch" : "main",
+        "revision" : "19ae5af4452d04d84342f83748aa873a8e2de3f0"
       }
     },
     {
