@@ -25,7 +25,7 @@ public enum JavaRuntime {
             guard let entry = try await Mojang.manifest().versions.first(where: { $0.id == version }),
                   let gameVersion = try await entry.gameVersion
             else { return JavaRequirement.defaultMajor }
-            return Int(gameVersion.javaVersion?.majorVersion ?? Int64(JavaRequirement.defaultMajor))
+            return Int(gameVersion.javaVersion?.majorVersion ?? Double(JavaRequirement.defaultMajor))
         } catch {
             return JavaRequirement.defaultMajor
         }

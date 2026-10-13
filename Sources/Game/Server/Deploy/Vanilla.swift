@@ -68,12 +68,12 @@ public struct VanillaServer: Server {
         let serverJarFileDirPath = GameDir.server(version: serverInfo.version, type: GameType.vanilla.rawValue)
         let serverJarFilePath = serverJarFileDirPath.filePath(serverJarFileName)
         let serverJarFileURL = URL(fileURLWithPath: serverJarFilePath)
-        let serverJarFileItem = DownloadItemInfo(sourceURL: serverVersionURL, dstFileURL: serverJarFileURL, hash: serverVersion.sha1, hashType: .sha1)
+        let serverJarFileItem = DownloadItemInfo(sourceURL: serverVersionURL, dstFileURL: serverJarFileURL, hash: gameVersion.downloads.server.sha1, hashType: .sha1)
         
         let progressBar = self.serverInfo.console?.progressBar(title: "正在下载服务端文件")
         try await Downloader.download(serverJarFileItem, progressBar: progressBar)
 
-        let major = Int(gameVersion.javaVersion?.majorVersion ?? Int64(JavaRequirement.defaultMajor))
+        let major = Int(gameVersion.javaVersion?.majorVersion ?? Double(JavaRequirement.defaultMajor))
         let javaExecutable = try await JavaRuntime.ensure(root: GameDir.root, major: major)
         let process = try await launchServer(
             serverJarFilePath,
