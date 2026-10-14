@@ -36,7 +36,7 @@ public extension Server {
         )
         let plan = GamePlan.planServerLaunch(
             executable: javaExecutable,
-            cwd: workDirectory.dirPath,
+            cwd: workDirectory,
             jarPath: filePath,
             options: options
         )
