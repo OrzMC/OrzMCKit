@@ -102,5 +102,4 @@ struct ServerCommand: AsyncCommand {
         let code = await process.waitForExit()
         console.success("服务端已退出（exit=\(code)）")
     }
-    }
 }
