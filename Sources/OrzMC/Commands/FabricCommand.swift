@@ -1,8 +1,8 @@
 import Foundation
 import ConsoleKit
-import JokerKits
 import Fabric
 import Game
+import TransferKit
 
 struct FabricCommand: AsyncCommand {
     
@@ -32,18 +32,17 @@ struct FabricCommand: AsyncCommand {
                     version: version)
             }
             else {
-                let (downloadURLTask, downloadProgressStream) = Downloader.download(installerURL)
-                
-                // 进度条展示
+                // 统一走 TransferKit 下载安装器
+                let localFileURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(installerURL.lastPathComponent)
                 let progressBar = context.console.progressBar(title: installerURL.lastPathComponent)
                 progressBar.start()
-                for try await progress in downloadProgressStream {
-                    progressBar.activity.currentProgress = progress.fractionCompleted
-                }
+                try await Transfer().download(
+                    DownloadItem(url: installerURL, destination: localFileURL)
+                )
                 progressBar.succeed()
-                
+
                 // Fabric安装器
-                let localFileURL = try await downloadURLTask.value
                 try await Fabric.installFabric(
                     installType,
                     installerFileURL: localFileURL,

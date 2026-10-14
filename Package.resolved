@@ -1,15 +1,6 @@
 {
-  "originHash" : "a43ea6a08dc7f7fbe9a7f97f89f4f6ba52c485d66344078f00abc10799bfaaf6",
+  "originHash" : "e5411e10868995fcd68fd44dda4354e634694c52105999b97d21cc881dfaef5f",
   "pins" : [
-    {
-      "identity" : "alamofire",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Alamofire/Alamofire.git",
-      "state" : {
-        "revision" : "bda9ed57d72988a3a2ada33d824583541f86eac6",
-        "version" : "5.12.2"
-      }
-    },
     {
       "identity" : "collectionconcurrencykit",
       "kind" : "remoteSourceControl",
@@ -61,7 +52,7 @@
       "location" : "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "cd93070d202dec0681aa8f14bf5bf2b90737b4b7"
+        "revision" : "b642b55624802563d7d7cfe1746005a1c54dbc67"
       }
     },
     {

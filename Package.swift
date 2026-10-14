@@ -34,7 +34,7 @@ let package = Package(
                 "Game",
                 "MojangAPI",
                 .product(name: "CacheKit", package: "OrzSwiftKit"),
-                .product(name: "JokerKits", package: "OrzSwiftKit"),
+                .product(name: "TransferKit", package: "OrzSwiftKit"),
             ]
         ),
         // MARK: Game Logic Capsule

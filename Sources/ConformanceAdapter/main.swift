@@ -2,8 +2,8 @@ import CacheKit
 import CryptoKit
 import Foundation
 import Game
-import JokerKits
 import MojangAPI
+import TransferKit
 
 // OrzMC Swift 一致性适配器（协议：docs/spec/conformance.md §6）。
 // stdin 收一个请求 JSON（fixture 的 given + id/specVersion），stdout 回一个响应 JSON。
