@@ -51,25 +51,19 @@ public struct Launcher: Client {
         self.clientInfo.console?.success("验证账号密码为正版用户")
     }
     
-    /// 启动客户端
+    /// 启动客户端（前台等待退出；共用引擎 `launchClient`）。
     mutating func launch() async throws {
-        guard let args = try await parseBootArgs() else {
+        self.clientInfo.console?.success("客户端正在启动，请稍等......")
+        guard let process = try await launchClient() else {
             return
         }
-        self.clientInfo.console?.success("客户端正在启动，请稍等......")
-        // 客户端启动后，可以从UI界面关闭，所以可以异步启动
-        let gameDir = GamePlan.clientDir(version: clientInfo.version.id)
         let console = clientInfo.console
-        // 托管 JRE（B5）：不依赖系统 java。
-        let major = await JavaRuntime.javaMajor(forMCVersion: clientInfo.version.id)
-        let javaExecutable = try await JavaRuntime.ensure(root: GamePlan.defaultRoot, major: major)
-        try Shell.run(path: javaExecutable, args: args, workDirectory: gameDir, terminationHandler: { process in
-            guard process.terminationStatus == 0 else {
-                console?.error("客户端异常退出")
-                return
-            }
+        let code = await process.waitForExit()
+        if code == 0 {
             console?.success("客户端正常")
-        })
+        } else {
+            console?.error("客户端异常退出（exit=\(code)）")
+        }
     }
     
     /// 下载启动器启动需要的文件
