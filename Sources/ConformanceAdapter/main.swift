@@ -324,6 +324,14 @@ func opPlanClientDownload(_ given: [String: Any]) throws -> [String: Any] {
     ]
 }
 
+func opNormalizeExit(_ given: [String: Any]) -> [String: Any] {
+    let raw = asInt(given["returnCode"]) ?? 0
+    if raw < 0 {  // POSIX: 负值表示被信号 N 杀死 → 128+N（规范 B7）
+        return ["exitCode": 128 + (-raw), "signaled": true, "signal": -raw]
+    }
+    return ["exitCode": raw, "signaled": false, "signal": NSNull()]
+}
+
 func dispatch(_ request: [String: Any]) -> [String: Any] {
     guard let operation = request["operation"] as? String else {
         return err("E_USAGE", "缺少 operation")
@@ -343,6 +351,7 @@ func dispatch(_ request: [String: Any]) -> [String: Any] {
         case "resolveConcurrency": return ok(opResolveConcurrency(request))
         case "nonTtyDefaults": return ok(try opNonTtyDefaults(request))
         case "normalizeProgress": return ok(opNormalizeProgress(request))
+        case "normalizeExit": return ok(opNormalizeExit(request))
         default: return err("E_UNSUPPORTED_OP", "未实现操作 \(operation)")
         }
     } catch let error as ConformanceError {
