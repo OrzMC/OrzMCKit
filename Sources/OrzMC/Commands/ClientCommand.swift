@@ -32,7 +32,7 @@ struct ClientCommand: AsyncCommand {
         let version = try await console.chooseGameVersion(signature.version)
         
         // 非 TTY：用户名默认 guest，不阻塞（B9）。
-        let username = signature.username ?? (Terminal.isInteractive
+        let username = signature.username ?? (TerminalEnvironment.isInteractive
             ? console.userInput(
                 hint: Constants.uiInputUsername.string,
                 completedHint: Constants.uiOutputUsername.string
@@ -43,7 +43,7 @@ struct ClientCommand: AsyncCommand {
         
         // 显示指定是否进行正版授权
         var accountName: String? = nil
-        if signature.authenticate && Terminal.isInteractive {
+        if signature.authenticate && TerminalEnvironment.isInteractive {
             accountName = console.userInput(hint: Constants.uiInputAuthAccount.string)
             if let accountName = accountName, accountName.count > 0 {
                 console.output(Constants.uiOutputAuthAccount.string.consoleText(.success) + accountName.consoleText(.info))

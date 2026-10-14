@@ -31,7 +31,7 @@ extension Console {
             return matched
         }
         // 非 TTY：不阻塞，使用最新 release（B9）。
-        guard Terminal.isInteractive else {
+        guard TerminalEnvironment.isInteractive else {
             return releaseVersions[0]
         }
         let versions = Array(releaseVersions[releaseVersions.startIndex..<releaseVersions.startIndex + 10])
