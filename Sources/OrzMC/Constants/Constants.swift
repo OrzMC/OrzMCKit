@@ -35,7 +35,7 @@ enum Constants: String {
     case serverHelp = "服务端相关"
     case serverGUIHelp = "无窗口模式启动（不弹服务端 GUI）"
     case serverForceUpgradeHelp = "强制升级地图"
-    case serverTypeHelp = "服务器类型: paper/vanilla, 默认：paper"
+    case serverTypeHelp = "服务器类型: vanilla/paper, 默认：vanilla"
     case serverMinMemHelp = "服务端运行使用的最小内存，默认为："
     case serverMaxMemHelp = "服务端运行使用的最大内存，默认为："
     case serverOnlineModeHelp = "服务端运行时是否使用Online模式，默认为：false"

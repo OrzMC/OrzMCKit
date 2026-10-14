@@ -110,7 +110,7 @@ public struct PaperServer: Server {
         loadingBar?.succeed()
         console?.info(name)
 
-        let workDirectory = GamePlan.serverDir(version: serverInfo.version, type: .paper)
+        let workDirectory = GamePlan.serverDir(version: serverInfo.version, type: .paper, root: serverInfo.rootDir)
         let serverJarFileDirPath = workDirectory
         let dirURL = URL(filePath: serverJarFileDirPath)
         if !FileManager.default.fileExists(atPath: dirURL.path()) {
@@ -151,7 +151,7 @@ public struct PaperServer: Server {
         }
         
         let major = await JavaRuntime.javaMajor(forMCVersion: version)
-        let javaExecutable = try await JavaRuntime.ensure(root: GamePlan.defaultRoot, major: major)
+        let javaExecutable = try await JavaRuntime.ensure(root: serverInfo.rootDir, major: major)
         let process = try await launchServer(
             jarFileURL.path(),
             workDirectory: workDirectory,

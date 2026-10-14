@@ -2,6 +2,50 @@ import Foundation
 import Testing
 
 @testable import Game
+@testable import OrzMC
+
+@Suite struct OrzMCVersionTests {
+    @Test func isSemanticVersion() {
+        let parts = OrzMCVersion.current.split(separator: ".")
+        #expect(parts.count == 3)
+        #expect(parts.allSatisfy { Int($0) != nil })
+    }
+}
+
+/// 全局选项预解析（规范 §3）：只消费子命令之前的全局选项。
+@Suite struct GlobalOptionsTests {
+    @Test func parsesLeadingGlobals() {
+        let parsed = GlobalOptions.parse(["orzmc", "--verbose", "--json", "--root-dir", "/tmp/mc", "list"])
+        #expect(parsed.options.verbose)
+        #expect(parsed.options.json)
+        #expect(parsed.options.rootDir == "/tmp/mc")
+        #expect(!parsed.versionRequested)
+        #expect(parsed.remaining == ["orzmc", "list"])
+        #expect(parsed.commandName == "list")
+    }
+
+    @Test func stopsAtSubcommand() {
+        // 子命令之后的 `--root-dir` / `--verbose` 交给子命令自己的签名。
+        let parsed = GlobalOptions.parse(["orzmc", "list", "--root-dir", "/tmp/mc"])
+        #expect(parsed.options.rootDir == nil)
+        #expect(parsed.remaining == ["orzmc", "list", "--root-dir", "/tmp/mc"])
+    }
+
+    @Test func versionRequested() {
+        let parsed = GlobalOptions.parse(["orzmc", "--version"])
+        #expect(parsed.versionRequested)
+        #expect(parsed.remaining == ["orzmc"])
+        #expect(parsed.commandName == "_root")
+    }
+
+    @Test func resolveRootPrecedence() {
+        var options = GlobalOptions()
+        options.rootDir = "/global"
+        #expect(options.resolveRoot("/command") == "/command")
+        #expect(options.resolveRoot(nil) == "/global")
+        #expect(GlobalOptions().resolveRoot(nil) == GamePlan.defaultRoot)
+    }
+}
 
 /// 引擎基础契约的离线单测（确定性、不联网）。
 @Suite struct GameTypeTests {

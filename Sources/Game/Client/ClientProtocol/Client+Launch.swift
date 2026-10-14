@@ -10,8 +10,8 @@ public extension Client {
         guard let args = try await parseBootArgs() else { return nil }
         let version = clientInfo.version.id
         let major = await JavaRuntime.javaMajor(forMCVersion: version)
-        let javaExecutable = try await JavaRuntime.ensure(root: GamePlan.defaultRoot, major: major)
-        let gameDir = GamePlan.clientDir(version: version)
+        let javaExecutable = try await JavaRuntime.ensure(root: clientInfo.rootDir, major: major)
+        let gameDir = GamePlan.clientDir(version: version, root: clientInfo.rootDir)
         return try ProcessRunner.run(
             executable: javaExecutable,
             args: args,

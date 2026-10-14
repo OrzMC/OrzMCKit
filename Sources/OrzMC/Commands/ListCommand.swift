@@ -4,6 +4,7 @@ import Game
 
 /// `orzmc list`：列出已安装的版本（客户端 / 服务端类型）。
 struct ListCommand: AsyncCommand {
+    let options: GlobalOptions
 
     struct Signature: CommandSignature {
         @Option(name: "root-dir", help: "游戏根目录(默认 ~/minecraft)")
@@ -14,8 +15,23 @@ struct ListCommand: AsyncCommand {
 
     func run(using context: CommandContext, signature: Signature) async throws {
         let console = context.console
-        let root = signature.rootDir ?? GamePlan.defaultRoot
+        let root = options.resolveRoot(signature.rootDir)
         let versions = GamePlan.installedVersions(root: root)
+
+        let data: [String: Any] = [
+            "versions": versions.map { item in
+                [
+                    "version": item.version,
+                    "client": item.hasClient,
+                    "servers": item.serverTypes.map(\.rawValue),
+                ] as [String: Any]
+            }
+        ]
+        if options.json {
+            JSONOutput.success(command: "list", data: data)
+            return
+        }
+
         guard !versions.isEmpty else {
             console.output("尚未安装任何版本")
             return

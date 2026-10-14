@@ -65,7 +65,7 @@ public struct VanillaServer: Server {
         }
 
         let serverJarFileName = serverVersionURL.lastPathComponent
-        let serverJarFileDirPath = GamePlan.serverDir(version: serverInfo.version, type: .vanilla)
+        let serverJarFileDirPath = GamePlan.serverDir(version: serverInfo.version, type: .vanilla, root: serverInfo.rootDir)
         let serverJarFilePath = serverJarFileDirPath + "/" + serverJarFileName
         let serverJarFileURL = URL(fileURLWithPath: serverJarFilePath)
         let serverJarFileItem = DownloadItemInfo(sourceURL: serverVersionURL, dstFileURL: serverJarFileURL, hash: gameVersion.downloads.server.sha1, hashType: .sha1)
@@ -74,7 +74,7 @@ public struct VanillaServer: Server {
         try await Downloader.download(serverJarFileItem, progressBar: progressBar)
 
         let major = Int(gameVersion.javaVersion?.majorVersion ?? Double(JavaRequirement.defaultMajor))
-        let javaExecutable = try await JavaRuntime.ensure(root: GamePlan.defaultRoot, major: major)
+        let javaExecutable = try await JavaRuntime.ensure(root: serverInfo.rootDir, major: major)
         let process = try await launchServer(
             serverJarFilePath,
             workDirectory: serverJarFileDirPath,
