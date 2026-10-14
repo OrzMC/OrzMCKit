@@ -9,9 +9,7 @@ import Foundation
 
 public extension Client {
     static func launcherProfilePath(for version: String) -> String {
-        let clientDir = GameDir.client(version: version)
-        let dstFilePath = clientDir.filePath("launcher_profiles.json")
-        return dstFilePath
+        return GamePlan.clientDir(version: version) + "/launcher_profiles.json"
     }
     static func launcherProfile(for version: String) throws -> LauncherProfile? {
         let dstFilePath = self.launcherProfilePath(for: version)
@@ -31,8 +29,7 @@ public extension Client {
     static func saveSelectedProfile(for version: String, with chooseItem: String) throws -> LauncherProfile?  {
         let launcherProfilePath = Self.launcherProfilePath(for: version)
         guard var launcherProfile = try Self.launcherProfile(for: version) else {
-            let clientDir = GameDir.client(version: version)
-            try clientDir.dirPath.makeDirIfNeed()
+            try GamePlan.clientDir(version: version).makeDirIfNeed()
             try LauncherProfile.vanillaProfile(version: version).writeToFile(launcherProfilePath)
             return nil
         }

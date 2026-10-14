@@ -12,7 +12,7 @@ public extension Server {
     
     func launchServer(
         _ filePath: String,
-        workDirectory: GameDir,
+        workDirectory: String,
         javaExecutable: String,
         jarArgs: [String] = []
     ) async throws -> ManagedProcess {
@@ -43,10 +43,10 @@ public extension Server {
         let args = plan.jvmArgs + ["-jar", plan.jarPath] + plan.serverArgs
         if serverInfo.debug { print(args.joined(separator: " ")) }
         
-        let eulaFilePath = workDirectory.filePath("eula.txt")
-        let propertiesFilePath = workDirectory.filePath("server.properties")
+        let eulaFilePath = workDirectory + "/eula.txt"
+        let propertiesFilePath = workDirectory + "/server.properties"
         if !FileManager.default.fileExists(atPath: eulaFilePath) || !FileManager.default.fileExists(atPath: propertiesFilePath) {
-            await Shell.run(path: javaExecutable, args: args + ["--initSettings"], workDirectory: workDirectory.dirPath)
+            await Shell.run(path: javaExecutable, args: args + ["--initSettings"], workDirectory: workDirectory)
         }
         let agreeEULA = try modifyEULA(at: eulaFilePath)
         if agreeEULA {
@@ -64,7 +64,7 @@ public extension Server {
         return try ProcessRunner.run(
             executable: javaExecutable,
             args: args,
-            workDirectory: workDirectory.dirPath
+            workDirectory: workDirectory
         )
     }
 }

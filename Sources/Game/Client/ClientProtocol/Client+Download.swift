@@ -30,7 +30,7 @@ public extension Client {
         // 游戏版本信息JSON文件
         if let sourceURL = URL(string: clientInfo.version.url)  {
             let jsonFileName = sourceURL.lastPathComponent
-            let jsonFilePath = GameDir.clientVersion(version: clientInfo.version.id).filePath(jsonFileName)
+            let jsonFilePath = GamePlan.clientDir(version: clientInfo.version.id) + "/" + jsonFileName
             let jsonFileURL = URL(fileURLWithPath: jsonFilePath)
             let jsonFileItme = DownloadItemInfo(sourceURL: sourceURL, dstFileURL: jsonFileURL)
             downloadItems.append(jsonFileItme)
@@ -38,14 +38,14 @@ public extension Client {
         
         // 游戏客户端Jar文件
         let clientJarFileName = [clientInfo.version.id, clientURL.pathExtension].joined(separator: ".")
-        let clientJarFilePath = GameDir.clientVersion(version: clientInfo.version.id).filePath(clientJarFileName)
+        let clientJarFilePath = GamePlan.clientDir(version: clientInfo.version.id) + "/" + clientJarFileName
         let clientJarFileURL = URL(fileURLWithPath: clientJarFilePath)
         let clientJarItem = DownloadItemInfo(sourceURL: clientURL, dstFileURL: clientJarFileURL, hash: client.sha1, hashType: .sha1)
         downloadItems.append(clientJarItem)
         
         // 游戏客户端资源索引文件
         let indexFileName = assetIndexURL.lastPathComponent
-        let indexFilePath = GameDir.assetsIdx(version: clientInfo.version.id).filePath(indexFileName)
+        let indexFilePath = GamePlan.clientIndexesDir(version: clientInfo.version.id) + "/" + indexFileName
         let indexFileURL = URL(fileURLWithPath: indexFilePath)
         let indexFileItem = DownloadItemInfo(sourceURL: assetIndexURL, dstFileURL: indexFileURL, hash: assetIndex.sha1, hashType: .sha1)
         downloadItems.append(indexFileItem)
@@ -53,7 +53,7 @@ public extension Client {
         // 游戏客户端资源对象文件
         for object in objects.additionalProperties.values {
             let assetObjURL = object.resourceURL
-            let assetFilePath = GameDir.assetsObj(version: clientInfo.version.id, path: object.dirName).filePath(object.fileName)
+            let assetFilePath = GamePlan.clientObjectsDir(version: clientInfo.version.id) + "/" + object.dirName + "/" + object.fileName
             let assetFileURL = URL(fileURLWithPath: assetFilePath)
             let assetFileItem = DownloadItemInfo(sourceURL: assetObjURL, dstFileURL: assetFileURL, hash: object.hash, hashType: .sha1)
             downloadItems.append(assetFileItem)
@@ -63,13 +63,13 @@ public extension Client {
         for lib in libraries {
             let artifact = lib.downloads.artifact
             let dirPath = NSString(string: artifact.path).deletingLastPathComponent
-            let targetDir = GameDir.libraryObj(version: clientInfo.version.id, path: dirPath)
+            let targetDir = GamePlan.clientLibraryPath(version: clientInfo.version.id, path: dirPath)
             
             let currentOSName = Platform.os.platformName()
             
 //            if let natives = lib.natives, let nativeClassifier = natives[currentOSName], let nativeArtifact = lib.downloads.classifiers?[nativeClassifier] {
 //                artifact = nativeArtifact
-//                targetDir = GameDir.clientVersionNative(version: clientInfo.version.id)
+//                targetDir = GamePlan.clientNativesDir(version: clientInfo.version.id)
 //            }
             
             // 判断当前平台是否需要下载
@@ -100,7 +100,7 @@ public extension Client {
                 continue
             }
             if let artifactURL = URL(string: artifact.url) {
-                let libFilePath = targetDir.filePath(artifactURL.lastPathComponent)
+                let libFilePath = targetDir + "/" + artifactURL.lastPathComponent
                 let libFileURL = URL(fileURLWithPath: libFilePath)
                 let libFileItem = DownloadItemInfo(sourceURL: artifactURL, dstFileURL: libFileURL, hash: artifact.sha1, hashType: .sha1)
                 downloadItems.append(libFileItem)
@@ -109,7 +109,7 @@ public extension Client {
         
         // 游戏客户端日志配置文件
         if let clientLogCfgFileURL = URL(string: clientLogCfgFile.url) {
-            let clientLogCfgFilePath = GameDir.clientLogConfig(version: clientInfo.version.id).filePath(clientLogCfgFileURL.lastPathComponent)
+            let clientLogCfgFilePath = GamePlan.clientLogConfigDir(version: clientInfo.version.id) + "/" + clientLogCfgFileURL.lastPathComponent
             let clientLogCfgFilePathURL = URL(fileURLWithPath: clientLogCfgFilePath)
             let clientLogCfgFileItem = DownloadItemInfo(sourceURL: clientLogCfgFileURL, dstFileURL: clientLogCfgFilePathURL, hash: clientLogCfgFile.sha1, hashType: .sha1)
             downloadItems.append(clientLogCfgFileItem)

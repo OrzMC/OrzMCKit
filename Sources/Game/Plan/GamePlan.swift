@@ -3,7 +3,7 @@ import Foundation
 /// 规范对齐的**纯计划契约**（dev 决策 D-a：strangler-fig）。
 ///
 /// 布局对齐 `docs/spec/data-model.md` §1；逻辑路径统一用 `/`（各实现按平台转换）。
-/// 旧 `GameDir`（`manifest/<v>/client/<type>/…`）暂存，待 CLI/app 迁移后移除。
+/// 旧 `GameDir` 已退役：路径统一由本契约与 `GamePlan+Paths` 提供。
 public enum GamePlan {
 
     public struct Layout: Sendable, Equatable {

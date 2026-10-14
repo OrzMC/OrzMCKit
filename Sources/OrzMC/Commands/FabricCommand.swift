@@ -23,12 +23,14 @@ struct FabricCommand: AsyncCommand {
         
         if let installer = signature.installer, let version = signature.version, let installerURL = URL(string: installer), version.count > 0 {
             let installType = signature.server ? Fabric.InstallType.server : Fabric.InstallType.client
-            let installDir = signature.server ? GameDir.server(version: version) : GameDir.client(version: version)
+            let installDir = signature.server
+                ? GamePlan.serverDir(version: version, type: .fabric)
+                : GamePlan.clientDir(version: version)
             if installerURL.isFileURL {
                 try await Fabric.installFabric(
                     installType,
                     installerFileURL: installerURL,
-                    installDir: installDir.dirPath,
+                    installDir: installDir,
                     version: version)
             }
             else {
@@ -46,7 +48,7 @@ struct FabricCommand: AsyncCommand {
                 try await Fabric.installFabric(
                     installType,
                     installerFileURL: localFileURL,
-                    installDir: installDir.dirPath,
+                    installDir: installDir,
                     version: version)
             }
         }
