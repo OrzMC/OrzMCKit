@@ -20,7 +20,8 @@ enum ErrorPresentation {
         }
         if let error = error as? GameError {
             switch error {
-            case .noGameVersions: return "无法获取版本清单（请检查网络连接）"
+            case .noGameVersions: return "无法获取版本清单(请检查网络连接)"
+            case .worldNotFound(let path): return "未找到世界目录: \(path)"
             }
         }
         return String(describing: error)
