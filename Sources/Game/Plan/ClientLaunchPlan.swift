@@ -288,27 +288,60 @@ public extension GamePlan {
             ))
         }
         for library in (version.libraries ?? []) where allow(library.rules, platform: platform, features: features) {
-            guard let download = libraryDownload(library, platform: platform) else { continue }
-            items.append(.init(
-                url: download.url,
-                path: "\(layout.clientLibrariesDir)/\(download.path)",
-                sha1: download.sha1,
-                size: download.size
-            ))
+            guard let item = libraryDownloadItem(library, layout: layout, platform: platform) else { continue }
+            items.append(item)
         }
         return items
     }
 }
 
-/// 选择库的下载产物：legacy（``natives``）按平台取 classifier，否则取 artifact。
-private func libraryDownload(_ library: LibraryPlan, platform: PlanPlatform) -> LibraryPlan.Download? {
+/// 选择库的下载项：legacy（``natives``）按平台取 classifier；无 ``downloads`` 时回退 Maven 路径。
+private func libraryDownloadItem(
+    _ library: LibraryPlan,
+    layout: GamePlan.Layout,
+    platform: PlanPlatform
+) -> DownloadPlanItem? {
+    let librariesDir = layout.clientLibrariesDir
     if let natives = library.natives, !natives.isEmpty {
-        guard let classifier = natives[platform.os], let download = library.downloads?.classifiers?[classifier] else {
-            return nil
+        guard let classifier = natives[platform.os] else { return nil }
+        if let download = library.downloads?.classifiers?[classifier] {
+            return .init(
+                url: download.url,
+                path: "\(librariesDir)/\(download.path)",
+                sha1: download.sha1,
+                size: download.size
+            )
         }
-        return download
+        guard let path = mavenPath(library.name, classifier: classifier) else { return nil }
+        return .init(url: mavenBase + path, path: "\(librariesDir)/\(path)", sha1: nil, size: nil)
     }
-    return library.downloads?.artifact
+    if let artifact = library.downloads?.artifact {
+        return .init(
+            url: artifact.url,
+            path: "\(librariesDir)/\(artifact.path)",
+            sha1: artifact.sha1,
+            size: artifact.size
+        )
+    }
+    guard let path = mavenPath(library.name, classifier: nil) else { return nil }
+    return .init(url: mavenBase + path, path: "\(librariesDir)/\(path)", sha1: nil, size: nil)
+}
+
+private let mavenBase = "https://libraries.minecraft.net/"
+
+/// 无 ``downloads`` 时的 Maven 相对路径（含 ``name`` 坐标里的 classifier 与传入的 classifier）。
+private func mavenPath(_ coords: String, classifier: String?) -> String? {
+    let parts = coords.split(separator: ":").map(String.init)
+    guard parts.count >= 2 else { return nil }
+    let group = parts[0]
+    let artifact = parts[1]
+    let version = parts.count >= 3 ? parts[2] : "unknown"
+    let defaultClassifier = parts.count >= 4 ? parts[3] : nil
+    let effectiveClassifier = classifier ?? defaultClassifier
+    var filename = "\(artifact)-\(version)"
+    if let effectiveClassifier { filename += "-\(effectiveClassifier)" }
+    filename += ".jar"
+    return "\(group.replacingOccurrences(of: ".", with: "/"))/\(artifact)/\(version)/\(filename)"
 }
 
 // MARK: - internals
