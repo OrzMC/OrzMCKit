@@ -9,9 +9,24 @@ import Testing
 @Suite struct CommandGroupTests {
     @Test func exposesSpecCommands() {
         let names = Set(CommandGroup(options: GlobalOptions()).commands.keys)
-        for expected in ["client", "server", "plugin", "fabric", "list", "remove", "backup", "version", "completion"] {
+        for expected in ["client", "server", "plugin", "list", "remove", "backup", "version", "completion", "capabilities"] {
             #expect(names.contains(expected))
         }
+    }
+
+    @Test func fabricIsHiddenAlias() {
+        // `fabric` 仍可用，但不列入 commands（因此不出现在帮助/补全/capabilities）。
+        #expect(!CommandGroup(options: GlobalOptions()).commands.keys.contains("fabric"))
+    }
+
+    @Test func capabilitiesReflectSignatures() {
+        let capabilities = CommandGroup(options: GlobalOptions()).capabilityList()
+        let client = capabilities.first { $0.name == "client" }
+        #expect(client != nil)
+        let names = client?.values.flatMap(\.names) ?? []
+        #expect(names.contains("--version"))
+        #expect(names.contains("--root-dir"))
+        #expect(client?.values.contains { $0.kind == "flag" } == true)
     }
 
     @Test func completionNativeShells() {
