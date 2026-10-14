@@ -173,3 +173,29 @@ import Testing
         #expect(!GamePlan.removeInstalled(version: "9.9.9", server: false, type: nil, root: root))
     }
 }
+
+@Suite struct BackupTests {
+    @Test func zipsWorldDir() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orzmc-backup-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        defer { try? fm.removeItem(at: root) }
+        let world = root.appendingPathComponent("versions/1.20.4/server/vanilla/world")
+        try fm.createDirectory(at: world, withIntermediateDirectories: true)
+        try "level".write(to: world.appendingPathComponent("level.dat"), atomically: true, encoding: .utf8)
+
+        let dest = try GamePlan.backupWorld(version: "1.20.4", type: .vanilla, root: root.path)
+        #expect(dest.hasSuffix(".zip"))
+        #expect(dest.contains("/backup/worlds/"))
+        #expect(fm.fileExists(atPath: dest))
+    }
+
+    @Test func missingWorldThrows() {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orzmc-backup-missing-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        #expect(throws: GameError.self) {
+            _ = try GamePlan.backupWorld(version: "1.20.4", type: .vanilla, root: root.path)
+        }
+    }
+}
