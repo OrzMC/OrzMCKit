@@ -72,14 +72,9 @@ public struct Launcher: Client {
         return code
     }
     
-    /// 下载启动器启动需要的文件
+    /// 下载启动器启动需要的文件（共用引擎 `downloadClient`；Phase 4）。
     func download() async throws {
-        self.clientInfo.console?.pushEphemeral()
-        let downloadItems = try await generateDownloadItemInfos()
-        let progressBar = self.clientInfo.console?.progressBar(title: "正在下载客户端文件")
-        try await Downloader.download(downloadItems, progressBar: progressBar)
-        self.clientInfo.console?.popEphemeral()
-        self.clientInfo.console?.success("下载客户端文件完成")
+        try await downloadClient()
     }
     
     /// 下载Fabric客户端相关文件
