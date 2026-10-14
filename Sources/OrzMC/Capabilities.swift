@@ -71,3 +71,4 @@ extension CompletionCommand: CapabilityDescribing {}
 extension CapabilitiesCommand: CapabilityDescribing {}
 extension UpdateCommand: CapabilityDescribing {}
 extension SelfUninstallCommand: CapabilityDescribing {}
+extension AppCommand: CapabilityDescribing {}
