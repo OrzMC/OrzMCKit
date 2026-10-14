@@ -199,18 +199,20 @@ func opPlanServerDeploy(_ given: [String: Any]) throws -> [String: Any] {
     ) else {
         throw fail("E_UNSUPPORTED_OP", "\(type.rawValue) 无离线部署计划")
     }
+    var artifact: [String: Any] = [
+        "url": plan.coreArtifact.url,
+        "filename": plan.coreArtifact.filename,
+    ]
+    if let sha1 = plan.coreArtifact.sha1 { artifact["sha1"] = sha1 } else { artifact["sha1"] = NSNull() }
+    if let size = plan.coreArtifact.size { artifact["size"] = size } else { artifact["size"] = NSNull() }
+
     return [
         "version": plan.version,
         "type": plan.type,
         "workdir": plan.workdir,
         "jarName": plan.jarName,
         "eula": plan.eula,
-        "coreArtifact": [
-            "url": plan.coreArtifact.url,
-            "sha1": plan.coreArtifact.sha1 ?? NSNull(),
-            "size": plan.coreArtifact.size ?? NSNull(),
-            "filename": plan.coreArtifact.filename,
-        ],
+        "coreArtifact": artifact,
     ]
 }
 
