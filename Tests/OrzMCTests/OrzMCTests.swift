@@ -130,3 +130,46 @@ import Testing
         #expect(plan.memory.max == "2G")
     }
 }
+
+@Suite struct InstalledVersionsTests {
+    private func makeRoot() -> String {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orzmc-versions-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        for path in ["versions/1.20.4/client", "versions/1.20.4/server/paper", "versions/1.21/server/vanilla"] {
+            try? fm.createDirectory(atPath: url.appendingPathComponent(path).path, withIntermediateDirectories: true)
+        }
+        return url.path
+    }
+
+    @Test func scansAndSorts() {
+        let root = makeRoot()
+        defer { try? FileManager.default.removeItem(atPath: root) }
+        let versions = GamePlan.installedVersions(root: root)
+        #expect(versions.map(\.version) == ["1.21", "1.20.4"])
+        let item = versions.first { $0.version == "1.20.4" }
+        #expect(item?.hasClient == true)
+        #expect(item?.serverTypes == [.paper])
+    }
+
+    @Test func removesClientKeepsServer() {
+        let root = makeRoot()
+        defer { try? FileManager.default.removeItem(atPath: root) }
+        #expect(GamePlan.removeInstalled(version: "1.20.4", server: false, type: nil, root: root))
+        #expect(!FileManager.default.fileExists(atPath: "\(root)/versions/1.20.4/client"))
+        #expect(FileManager.default.fileExists(atPath: "\(root)/versions/1.20.4/server/paper"))
+    }
+
+    @Test func removesLastServerAndPrunesVersionDir() {
+        let root = makeRoot()
+        defer { try? FileManager.default.removeItem(atPath: root) }
+        #expect(GamePlan.removeInstalled(version: "1.21", server: true, type: .vanilla, root: root))
+        #expect(!FileManager.default.fileExists(atPath: "\(root)/versions/1.21"))
+    }
+
+    @Test func removeMissingReturnsFalse() {
+        let root = makeRoot()
+        defer { try? FileManager.default.removeItem(atPath: root) }
+        #expect(!GamePlan.removeInstalled(version: "9.9.9", server: false, type: nil, root: root))
+    }
+}

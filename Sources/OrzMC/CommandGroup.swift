@@ -5,6 +5,8 @@ enum Feature: String, CaseIterable {
     case server
     case plugin
     case fabric
+    case list
+    case remove
 }
 
 struct CommandGroup: AsyncCommandGroup {
@@ -13,6 +15,8 @@ struct CommandGroup: AsyncCommandGroup {
         .server: ServerCommand(),
         .plugin: PluginCommand(),
         .fabric: FabricCommand(),
+        .list: ListCommand(),
+        .remove: RemoveCommand(),
     ]
     var help: String { Constants.commandGroupHelp.string }
     var commands: [String : any AnyAsyncCommand] {
