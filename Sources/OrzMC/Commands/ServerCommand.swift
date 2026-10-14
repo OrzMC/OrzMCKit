@@ -5,13 +5,13 @@ import Game
 struct ServerCommand: AsyncCommand {
     
     struct Signature: CommandSignature {
-        @Flag(name: "debug", short: "d", help: Constants.DebugHelp.string)
+        @Flag(name: "verbose", short: "d", help: Constants.DebugHelp.string)
         var debug: Bool
         
-        @Flag(name: "gui", short: "g", help: Constants.serverGUIHelp.string)
-        var gui: Bool
+        @Flag(name: "nogui", short: "g", help: Constants.serverGUIHelp.string)
+        var nogui: Bool
         
-        @Flag(name: "force_upgrade", short: "f", help: Constants.serverForceUpgradeHelp.string)
+        @Flag(name: "force-upgrade", short: "f", help: Constants.serverForceUpgradeHelp.string)
         var forceUpgrade: Bool
         
         @Option(name: "type", short: "t", help: Constants.serverTypeHelp.string)
@@ -20,10 +20,10 @@ struct ServerCommand: AsyncCommand {
         @Option(name: "version", short: "v", help: Constants.VersionHelp.string)
         var version: String?
         
-        @Option(name: "ms", short: "s", help: Constants.serverMinMemHelp.string)
+        @Option(name: "min-mem", short: "m", help: Constants.serverMinMemHelp.string)
         var minMem: String?
         
-        @Option(name: "mx", short: "x", help: Constants.serverMaxMemHelp.string)
+        @Option(name: "max-mem", short: "x", help: Constants.serverMaxMemHelp.string)
         var maxMem: String?
         
         @Option(name: "online-mode", short: "o", help: Constants.serverOnlineModeHelp.string)
@@ -32,7 +32,7 @@ struct ServerCommand: AsyncCommand {
         @Flag(name: "jar-help", short: "j", help: Constants.serverJarHelp.string)
         var jarHelp: Bool
         
-        @Option(name: "jar-opts", short: "e", help: Constants.serverJarOptionHelp.string)
+        @Option(name: "server-args", short: "e", help: Constants.serverJarOptionHelp.string)
         var jarOpts: String?
         
         @Flag(name: "demo", help: Constants.serverDemoModeHelp.string)
@@ -54,7 +54,8 @@ struct ServerCommand: AsyncCommand {
             return
         }
         let version = try await console.chooseGameVersion(signature.version)
-        let gui = signature.gui
+        // `--nogui` 默认 false = 弹 GUI（对齐规范/Python）；给定时 headless。
+        let gui = !signature.nogui
         let debug = signature.debug
         let minMem = signature.minMem ?? Constants.serverMinMemDefault
         let maxMem = signature.maxMem ?? Constants.serverMaxMemDefault

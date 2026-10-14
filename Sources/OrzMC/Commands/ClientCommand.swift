@@ -4,7 +4,7 @@ import Game
 struct ClientCommand: AsyncCommand {
     
     struct Signature: CommandSignature {
-        @Flag(name: "debug", short: "d", help: Constants.DebugHelp.string)
+        @Flag(name: "verbose", short: "d", help: Constants.DebugHelp.string)
         var debug: Bool
         
         @Flag(name: "auth", short: "a", help: Constants.clientAuthHelp.string)
@@ -16,10 +16,10 @@ struct ClientCommand: AsyncCommand {
         @Option(name: "username", short: "u", help: Constants.clientUsernameHelp.string)
         var username: String?
         
-        @Option(name: "ms", short: "s", help: Constants.clientMinMemHelp.string)
+        @Option(name: "min-mem", short: "m", help: Constants.clientMinMemHelp.string)
         var minMem: String?
         
-        @Option(name: "mx", short: "x", help: Constants.clientMaxMemHelp.string)
+        @Option(name: "max-mem", short: "x", help: Constants.clientMaxMemHelp.string)
         var maxMem: String?
     }
     
