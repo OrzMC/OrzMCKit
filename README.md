@@ -1,8 +1,67 @@
 # OrzMCKit
 
-Swift ToolKit for OrzMCApp
+Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的 **macOS 原生实现**。
 
-## Installation
+- **引擎库**：`Game`（版本解析、规范布局、下载、托管 JRE、受管进程、启动计划）、`Fabric`。
+- **可执行**：`orzmc` CLI（与 [Python 实现 `orzmc`](https://github.com/OrzMC/OrzPythonMC) 共用
+  同一套[命令面规范](https://github.com/OrzMC/OrzMC/blob/main/docs/spec/cli-surface.md)与
+  [一致性套件](https://github.com/OrzMC/OrzMC/blob/main/docs/spec/conformance.md)）。
+- **一致性适配器**：`ConformanceAdapter`（驱动父仓库 `docs/spec/fixtures` 黄金样例）。
+
+> 父仓库 [OrzMC](https://github.com/OrzMC/OrzMC) 是产品伞：规范、发版组合、跨仓协调都在那里。
+
+## Install
+
+macOS（用户级，免 sudo）：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/OrzMC/OrzMCKit/main/scripts/install.sh | sh
+```
+
+安装器会把二进制放到 `${XDG_BIN_HOME:-$HOME/.local/bin}`、配置 PATH 与补全，并写入
+`${XDG_STATE_HOME:-$HOME/.local/state}/orzmc/install.conf`（契约见父仓库
+[`docs/spec/install-update.md`](https://github.com/OrzMC/OrzMC/blob/main/docs/spec/install-update.md)）。
+
+手动安装：从 [Releases](https://github.com/OrzMC/OrzMCKit/releases) 下载对应架构的
+`orzmc-macos-arm64` / `orzmc-macos-x86_64`，`chmod +x` 后放入 PATH。
 
 ## Usage
 
+```sh
+orzmc --help                 # 命令总览
+orzmc version                # 工具版本（或全局 orzmc --version）
+orzmc client -v 1.20.4       # 启动客户端（缺失文件自动下载）
+orzmc server -t vanilla -v 1.20.4 --nogui   # 部署并启动服务端
+orzmc list                   # 已安装版本
+orzmc remove -v 1.20.4       # 移除版本
+orzmc backup -v 1.20.4       # 备份服务端世界
+orzmc plugin --search luckperms             # Hangar 搜索插件
+```
+
+全局选项（须在子命令**之前**）：
+
+```sh
+orzmc --verbose --root-dir ~/mc client -v 1.20.4
+orzmc --json list            # 机器可读信封 {ok,command,data,error}（AI/脚本）
+```
+
+## Versioning & releases
+
+- 工具版本单一事实源：`Sources/Game/OrzMCVersion.swift`；
+  `--version` / `version` / `--json` 信封都读它。
+- 发版走 Conventional Commits + [release-please](https://github.com/googleapis/release-please)：
+  合并 release PR 自动打 tag `vX.Y.Z` 并触发 [`release.yml`](.github/workflows/release.yml)
+  构建 macOS 二进制、校验自报版本、挂到 GitHub Release。
+- **护栏**：tag 必须等于代码里的版本，且必须落在 `main` 上。
+
+## Development
+
+```sh
+swift build
+swift test
+
+# 一致性套件（需父仓库 fixtures；CI 同款）
+swift build -c debug --product ConformanceAdapter
+python3 ../OrzMC/scripts/conformance/run.py \
+  --adapter "$(swift build -c debug --show-bin-path)/ConformanceAdapter" --strict
+```

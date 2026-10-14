@@ -1,0 +1,158 @@
+name: Release
+
+# 发布 Swift `orzmc` CLI（macOS）：tag `vX.Y.Z` → 构建 arm64 / x86_64 二进制 →
+# 校验自报版本 → 挂到 GitHub Release（全部产物到位后才可见）。
+#
+# 资产命名与 Python 侧 `asset_for()` 一致：`orzmc-macos-<arch>`，便于 `orzmc update`
+# 用同一套 (os, arch) → asset 规则解析（见 docs/spec/install-update.md §6）。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布的 tag(如 v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # 第一道护栏：tag 必须等于代码里的 OrzMCVersion.current，且落在 main 上。
+  # 不一致的代价：客户端自升级用 releases/latest 的 tag 与二进制内嵌版本比较，
+  # 版本对不上会变成「下载→替换→重启后版本没变→再提示升级」的死循环。
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Read the version from source
+        id: version
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/.*static let current = "\([^"]*\)".*/\1/p' Sources/Game/OrzMCVersion.swift | head -1)"
+          if [ -z "$version" ]; then
+            echo "::error::cannot read OrzMCVersion.current from Sources/Game/OrzMCVersion.swift"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Tag matches the version in source
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::tag $TAG does not match v$VERSION (Sources/Game/OrzMCVersion.swift). Bump the version first, then tag."
+            exit 1
+          fi
+          echo "ok: $TAG == v$VERSION"
+      - name: Tag commit is on main
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          # 用 checkout 出来的 HEAD(手动 dispatch 时 github.ref 是分支,不能当 tag)。
+          sha="$(git rev-parse HEAD)"
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$sha" FETCH_HEAD; then
+            echo "::error::tag $TAG points at $sha which is not on main — release from main only."
+            exit 1
+          fi
+          echo "ok: $sha is on main"
+
+  build:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+            asset: orzmc-macos-arm64
+          - runner: macos-15-intel
+            arch: x86_64
+            asset: orzmc-macos-x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Toolchain
+        run: swift --version
+      - name: Build (release)
+        run: swift build -c release --product orzmc
+      - name: Package the binary
+        run: |
+          set -euo pipefail
+          cp .build/release/orzmc "${{ matrix.asset }}"
+          chmod +x "${{ matrix.asset }}"
+          ./"${{ matrix.asset }}" version
+      - name: Assert architecture
+        run: |
+          set -euo pipefail
+          info="$(file -b "${{ matrix.asset }}")"
+          echo "$info"
+          case "$info" in
+            *"${{ matrix.arch }}"*) echo "ok: ${{ matrix.arch }}" ;;
+            *) echo "::error::expected ${{ matrix.arch }}, got: $info"; exit 1 ;;
+          esac
+      - name: Assert the binary reports the released version
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          out="$(./${{ matrix.asset }} version)"
+          case "$out" in
+            "orzmc ${TAG#v}"*) echo "ok: $out" ;;
+            *) echo "::error::binary reports '$out', expected 'orzmc ${TAG#v}'"; exit 1 ;;
+          esac
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
+  # 所有平台产物齐了才建/发布 Release：半成品不会出现在 releases/latest 上，
+  # 一键安装与 `orzmc update` 也就不会提前把新版本推给用户。
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum orzmc-macos-* > SHA256SUMS
+          cat SHA256SUMS
+      - name: Create or update the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # release-please 可能已建好 draft release(带整理过的 notes):补产物后发布。
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --draft=false
+          else
+            gh release create "$TAG" dist/* --title "$TAG" --generate-notes
+          fi
+          gh release view "$TAG" --json tagName,isDraft,url \
+            --jq '"released \(.tagName) draft=\(.isDraft) \(.url)"'
