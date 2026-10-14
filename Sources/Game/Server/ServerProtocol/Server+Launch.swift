@@ -17,48 +17,30 @@ public extension Server {
         jarArgs: [String] = []
     ) async throws -> ManagedProcess {
         
-        var args = [
-            "-server",
-            "-Xms" + serverInfo.minMem,
-            "-Xmx" + serverInfo.maxMem,
-        ]
-        
-        if !serverInfo.jvmArgs.isEmpty {
-            args += serverInfo.jvmArgs
-        }
+        try await Shell.stopAll()
 
-        args += [
-            "-jar",
-            filePath,
-        ]
-        
-        if serverInfo.showJarHelpInfo {
-            args.append("--help")
-        } else {
-            try await Shell.stopAll()
-            let pidFilePath = workDirectory.filePath("run.pid")
-            args.append("--pidFile=\(pidFilePath)")
-            
-            if serverInfo.forceUpgrade {
-                args.append("--forceUpgrade")
-            }
-            
-            if serverInfo.demo {
-                args.append("--demo")
-            }
-            
-            if !jarArgs.isEmpty {
-                args += jarArgs
-            }
-            
-            if let jarOpts = serverInfo.jarOptions {
-                args.append(jarOpts.replacingOccurrences(of: "a:", with: ""))
-            }
-            
-            if !serverInfo.gui {
-                args.append("--nogui")
-            }
+        // 规范启动计划（与 Python `_build_server_command` 对齐，消除漂移）。
+        var userServerArgs = jarArgs
+        if serverInfo.demo { userServerArgs.append("--demo") }
+        if serverInfo.showJarHelpInfo { userServerArgs.append("--help") }
+        if let jarOpts = serverInfo.jarOptions {
+            userServerArgs.append(jarOpts.replacingOccurrences(of: "a:", with: ""))
         }
+        let options = ServerLaunchOptions(
+            minMem: serverInfo.minMem,
+            maxMem: serverInfo.maxMem,
+            jvmOpts: serverInfo.jvmArgs,
+            userServerArgs: userServerArgs,
+            nogui: !serverInfo.gui && !serverInfo.showJarHelpInfo,
+            forceUpgrade: serverInfo.forceUpgrade
+        )
+        let plan = GamePlan.planServerLaunch(
+            executable: javaExecutable,
+            cwd: workDirectory.dirPath,
+            jarPath: filePath,
+            options: options
+        )
+        let args = plan.jvmArgs + ["-jar", plan.jarPath] + plan.serverArgs
         if serverInfo.debug { print(args.joined(separator: " ")) }
         
         let eulaFilePath = workDirectory.filePath("eula.txt")

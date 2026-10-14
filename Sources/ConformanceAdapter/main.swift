@@ -188,6 +188,42 @@ func opCacheDecision(_ given: [String: Any]) -> [String: Any] {
     return ["action": action.rawValue]
 }
 
+func opPlanServerLaunch(_ given: [String: Any]) throws -> [String: Any] {
+    let type = GameType(rawValue: given["type"] as? String ?? "vanilla") ?? .vanilla
+    let version = given["version"] as? String ?? ""
+    let root = given["root"] as? String ?? ""
+    let platform = given["platform"] as? [String: Any]
+    let layout = GamePlan.layout(
+        root: root,
+        version: version,
+        type: type,
+        javaMajor: asInt(given["javaMajor"]) ?? 8,
+        windows: (platform?["os"] as? String) == "windows"
+    )
+    let input = given["options"] as? [String: Any] ?? [:]
+    let options = ServerLaunchOptions(
+        minMem: input["minMem"] as? String ?? "512M",
+        maxMem: input["maxMem"] as? String ?? "2G",
+        jvmOpts: input["jvmOpts"] as? [String] ?? [],
+        userServerArgs: input["userServerArgs"] as? [String] ?? [],
+        nogui: input["nogui"] as? Bool ?? false,
+        forceUpgrade: input["forceUpgrade"] as? Bool ?? false
+    )
+    let plan = GamePlan.planServerLaunch(
+        executable: layout.javaExecutable ?? "",
+        cwd: layout.serverDir,
+        jarPath: layout.serverJarPath,
+        options: options
+    )
+    return [
+        "executable": plan.executable,
+        "cwd": plan.cwd,
+        "jarPath": plan.jarPath,
+        "jvmArgs": plan.jvmArgs,
+        "serverArgs": plan.serverArgs,
+    ]
+}
+
 func opPlanServerDeploy(_ given: [String: Any]) throws -> [String: Any] {
     let type = GameType(rawValue: given["type"] as? String ?? "vanilla") ?? .vanilla
     let data = try loadFixture(given["snapshot"] as? String ?? "")
@@ -263,6 +299,7 @@ func dispatch(_ request: [String: Any]) -> [String: Any] {
         case "requiredJava": return ok(try opRequiredJava(request))
         case "verifyArtifact": return ok(try opVerifyArtifact(request))
         case "cacheDecision": return ok(opCacheDecision(request))
+        case "planServerLaunch": return ok(try opPlanServerLaunch(request))
         case "planServerDeploy": return ok(try opPlanServerDeploy(request))
         case "planDownloadConcurrency": return ok(opPlanDownloadConcurrency(request))
         case "resolveConcurrency": return ok(opResolveConcurrency(request))
