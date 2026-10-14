@@ -5,6 +5,10 @@ import MojangAPI
 /// 错误语义归一（B11）：把底层错误转成**用户可读**信息，不裸抛。
 enum ErrorPresentation {
     static func message(for error: Error) -> String {
+        // CLI 命令自身抛出的错误：已是用户可读信息。
+        if let error = error as? CLIError {
+            return error.message
+        }
         if let error = error as? MojangAPIError {
             switch error {
             case .invalidURL: return "无效的地址"

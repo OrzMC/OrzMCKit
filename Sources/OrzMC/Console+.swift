@@ -18,7 +18,7 @@ extension Console {
         output(completedHint.consoleText(.success) + display(choose).description.consoleText(.info))
         return choose
     }
-    public func chooseGameVersion(_ version: String?) async throws -> Version {
+    public func chooseGameVersion(_ version: String?, interactive: Bool = TerminalEnvironment.isInteractive) async throws -> Version {
         guard let releaseVersions = try? await Mojang.versions(type: .release), !releaseVersions.isEmpty
         else {
             throw GameError.noGameVersions
@@ -30,8 +30,8 @@ extension Console {
             }
             return matched
         }
-        // 非 TTY：不阻塞，使用最新 release（B9）。
-        guard TerminalEnvironment.isInteractive else {
+        // 非 TTY / `--json`：不阻塞，使用最新 release（B9）。
+        guard interactive else {
             return releaseVersions[0]
         }
         let versions = Array(releaseVersions[releaseVersions.startIndex..<releaseVersions.startIndex + 10])

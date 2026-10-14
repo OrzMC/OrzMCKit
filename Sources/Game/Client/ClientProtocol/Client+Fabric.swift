@@ -14,12 +14,12 @@ extension Client {
         guard let launcherProfile = self.clientInfo.launcherProfile, launcherProfile.selectedProfile.contains("fabric"), let lastVersionId = launcherProfile.profiles[launcherProfile.selectedProfile]?.lastVersionId else {
             return nil
         }
-        let fabricLaunchProfileDir = GamePlan.clientProfileDir(version: self.clientInfo.version.id, profile: lastVersionId)
+        let fabricLaunchProfileDir = GamePlan.clientProfileDir(version: self.clientInfo.version.id, profile: lastVersionId, root: self.clientInfo.rootDir)
         let fabricLaunchProfilePath = fabricLaunchProfileDir + "/\(lastVersionId).json"
         let fabricLaunchProfileURL = URL(fileURLWithPath: fabricLaunchProfilePath)
         self.clientInfo.fabricModel = try Fabric.launcherConfig(fabricLaunchProfileURL)
         
-        return GamePlan.clientProfileLibrariesDir(version: self.clientInfo.version.id, profile: lastVersionId)
+        return GamePlan.clientProfileLibrariesDir(version: self.clientInfo.version.id, profile: lastVersionId, root: self.clientInfo.rootDir)
     }
     func fabricClientJVMOptions() -> [String]? {
         return self.clientInfo.fabricModel?.arguments.jvm

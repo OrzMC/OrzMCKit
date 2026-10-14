@@ -13,6 +13,8 @@ import ConsoleKit
 public struct ClientInfo: Sendable {
     public var version: Version
     public var username: String
+    /// 游戏根目录（规范 §3 全局 `--root-dir`；默认 `~/minecraft`）。
+    public var rootDir: String
     var debug: Bool
     var authenticate: Bool
     var launcherProfile: LauncherProfile?
@@ -36,6 +38,7 @@ public struct ClientInfo: Sendable {
     public init(
         version: Version,
         username: String,
+        rootDir: String = GamePlan.defaultRoot,
         debug: Bool = false,
         authenticate: Bool = false,
         launcherProfile: LauncherProfile? = nil,
@@ -50,6 +53,7 @@ public struct ClientInfo: Sendable {
     ) {
         self.version = version
         self.username = username
+        self.rootDir = rootDir
         self.debug = debug
         self.authenticate = authenticate
         self.launcherProfile = launcherProfile

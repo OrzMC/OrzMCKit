@@ -21,8 +21,8 @@ extension Client {
         let cpSep = Platform.os == .windows ? ";" : ":"
         
         var libraryDirs = Array([
-            GamePlan.clientLibrariesDir(version: clientInfo.version.id),
-            GamePlan.clientDir(version: clientInfo.version.id),
+            GamePlan.clientLibrariesDir(version: clientInfo.version.id, root: clientInfo.rootDir),
+            GamePlan.clientDir(version: clientInfo.version.id, root: clientInfo.rootDir),
         ])
         // Fabric 客户端启动时附带的额外库
         if let fabricLibrariesDir = try self.fabricClientVersionProfileLibrariesDir() {
@@ -30,15 +30,15 @@ extension Client {
         }
         
         let classPath = libraryDirs.compactMap { FileManager.allFiles(in: $0, ext: jarExt) }.joined()
-        let gameDir = GamePlan.clientDir(version: clientInfo.version.id)
+        let gameDir = GamePlan.clientDir(version: clientInfo.version.id, root: clientInfo.rootDir)
         let envs = [
-            "natives_directory": GamePlan.clientNativesDir(version: clientInfo.version.id),
+            "natives_directory": GamePlan.clientNativesDir(version: clientInfo.version.id, root: clientInfo.rootDir),
             "launcher_name": "OrzMC",
             "launcher_version": clientInfo.version.id,
             "auth_player_name": clientInfo.username,
             "version_name": clientInfo.version.id,
             "game_directory": gameDir,
-            "assets_root": GamePlan.clientAssetsDir(version: clientInfo.version.id),
+            "assets_root": GamePlan.clientAssetsDir(version: clientInfo.version.id, root: clientInfo.rootDir),
             "assets_index_name": gameInfo.assetIndex.id,
             "auth_uuid": UUID().uuidString,
             "auth_access_token": clientInfo.accessToken ?? UUID().uuidString,
@@ -47,7 +47,7 @@ extension Client {
             "user_type": "mojang",
             "version_type": clientInfo.version._type.rawValue,
             "classpath": classPath.joined(separator: cpSep),
-            "path": GamePlan.clientLogConfigDir(version: clientInfo.version.id) + "/" + gameInfo.logging.client.file.id
+            "path": GamePlan.clientLogConfigDir(version: clientInfo.version.id, root: clientInfo.rootDir) + "/" + gameInfo.logging.client.file.id
         ]
         
         var javaArgsArray = [

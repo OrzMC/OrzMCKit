@@ -4,6 +4,7 @@ import Game
 
 /// `orzmc remove`：移除已安装的版本（客户端或某类型的服务端）。
 struct RemoveCommand: AsyncCommand {
+    let options: GlobalOptions
 
     struct Signature: CommandSignature {
         @Option(name: "version", short: "v", help: "要移除的 Minecraft 版本")
@@ -23,27 +24,29 @@ struct RemoveCommand: AsyncCommand {
 
     func run(using context: CommandContext, signature: Signature) async throws {
         let console = context.console
-        let root = signature.rootDir ?? GamePlan.defaultRoot
+        let root = options.resolveRoot(signature.rootDir)
 
         guard let version = signature.version else {
-            console.error("需要指定要移除的版本 (-v)")
-            return
+            throw CLIError("需要指定要移除的版本 (-v)", code: "E_USAGE")
         }
 
         var type: GameType?
         if signature.server {
             guard let raw = signature.type, let parsed = GameType(rawValue: raw) else {
-                console.error("移除服务端需要指定类型 (-t vanilla|paper|fabric|forge)")
-                return
+                throw CLIError("移除服务端需要指定类型 (-t vanilla|paper|fabric|forge)", code: "E_USAGE")
             }
             type = parsed
         }
 
         let removed = GamePlan.removeInstalled(version: version, server: signature.server, type: type, root: root)
-        if removed {
-            console.success("已移除 \(version)")
+        guard removed else {
+            throw CLIError("未找到要移除的版本: \(version)", code: "E_NOT_FOUND")
+        }
+
+        if options.json {
+            JSONOutput.success(command: "remove", data: ["version": version, "removed": true])
         } else {
-            console.error("未找到要移除的版本: \(version)")
+            console.success("已移除 \(version)")
         }
     }
 }

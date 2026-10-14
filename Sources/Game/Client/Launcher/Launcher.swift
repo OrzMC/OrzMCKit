@@ -23,8 +23,13 @@ public struct Launcher: Client {
         self.clientInfo = clientInfo
     }
         
-    /// 客户端启动
+    /// 客户端启动（协议要求，退出码丢弃；CLI 用 `run()`）。
     mutating public func start() async throws {
+        _ = try await self.run()
+    }
+
+    /// 启动并前台等待退出，返回归一化退出码（CLI 用）。
+    mutating public func run() async throws -> Int {
         
         // 选择启动的方式
         try self.chooseProfile()
@@ -39,7 +44,7 @@ public struct Launcher: Client {
         try await self.downloadFabric()
         
         // 分析参数并启动客户端
-        try await self.launch()
+        return try await self.launch()
     }
     
     /// 授权验证
@@ -51,19 +56,20 @@ public struct Launcher: Client {
         self.clientInfo.console?.success("验证账号密码为正版用户")
     }
     
-    /// 启动客户端（前台等待退出；共用引擎 `launchClient`）。
-    mutating func launch() async throws {
+    /// 启动客户端（前台等待退出），返回归一化退出码（B7）。
+    mutating func launch() async throws -> Int {
         self.clientInfo.console?.success("客户端正在启动，请稍等......")
         guard let process = try await launchClient() else {
-            return
+            return 0
         }
         let console = clientInfo.console
-        let code = await process.waitForExit()
+        let code = Int(await process.waitForExit())
         if code == 0 {
             console?.success("客户端正常")
         } else {
             console?.error("客户端异常退出（exit=\(code)）")
         }
+        return code
     }
     
     /// 下载启动器启动需要的文件

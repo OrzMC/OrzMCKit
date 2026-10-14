@@ -10,6 +10,8 @@ import ConsoleKit
 
 public struct ServerInfo: Sendable {
     public let version: String
+    /// 游戏根目录（规范 §3 全局 `--root-dir`；默认 `~/minecraft`）。
+    public var rootDir: String
     let gui: Bool
     let debug: Bool
     let forceUpgrade: Bool
@@ -32,6 +34,7 @@ public struct ServerInfo: Sendable {
 
     public init(
         version: String,
+        rootDir: String = GamePlan.defaultRoot,
         gui: Bool,
         debug: Bool,
         forceUpgrade: Bool,
@@ -45,6 +48,7 @@ public struct ServerInfo: Sendable {
         console: (any Console)? = nil
     ) {
         self.version = version
+        self.rootDir = rootDir
         self.gui = gui
         self.debug = debug
         self.forceUpgrade = forceUpgrade
