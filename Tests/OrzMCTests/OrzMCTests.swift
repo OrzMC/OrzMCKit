@@ -1,8 +1,27 @@
+import ConsoleKit
 import Foundation
 import Testing
 
 @testable import Game
 @testable import OrzMC
+
+/// 命令面暴露（对齐 docs/spec/cli-surface.md §2）。
+@Suite struct CommandGroupTests {
+    @Test func exposesSpecCommands() {
+        let names = Set(CommandGroup(options: GlobalOptions()).commands.keys)
+        for expected in ["client", "server", "plugin", "fabric", "list", "remove", "backup", "version", "completion"] {
+            #expect(names.contains(expected))
+        }
+    }
+
+    @Test func completionNativeShells() {
+        // ConsoleKit 原生只支持 bash/zsh（fish/powershell 显式不支持）。
+        #expect(Shell(rawValue: "bash") != nil)
+        #expect(Shell(rawValue: "zsh") != nil)
+        #expect(Shell(rawValue: "fish") == nil)
+        #expect(Shell(rawValue: "powershell") == nil)
+    }
+}
 
 @Suite struct OrzMCVersionTests {
     @Test func isSemanticVersion() {

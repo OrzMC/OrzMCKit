@@ -9,6 +9,7 @@ enum Feature: String, CaseIterable {
     case remove
     case backup
     case version
+    case completion
 }
 
 struct CommandGroup: AsyncCommandGroup {
@@ -26,6 +27,7 @@ struct CommandGroup: AsyncCommandGroup {
             .remove: RemoveCommand(options: options),
             .backup: BackupCommand(options: options),
             .version: VersionCommand(options: options),
+            .completion: CompletionCommand(options: options, root: { CommandGroup(options: options) }),
         ]
     }
 
