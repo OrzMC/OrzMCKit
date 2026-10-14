@@ -12,9 +12,8 @@ import Testing
         #expect(GameType.paper.rawValue == "paper")
     }
 
-    @Test func defaultTypes() {
-        #expect(GameDir.defaultClientType == GameType.vanilla.rawValue)
-        #expect(GameDir.defaultServerType == GameType.vanilla.rawValue)
+    @Test func defaultRoot() {
+        #expect(GamePlan.defaultRoot.hasSuffix("/minecraft"))
     }
 
     @Test func clientCapabilityMatrix() {
