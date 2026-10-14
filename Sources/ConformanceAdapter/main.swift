@@ -287,6 +287,43 @@ func opNormalizeProgress(_ given: [String: Any]) -> [String: Any] {
     ]
 }
 
+func opPlanClientDownload(_ given: [String: Any]) throws -> [String: Any] {
+    let type = GameType(rawValue: given["type"] as? String ?? "vanilla") ?? .vanilla
+    guard type.isClientCapable else {
+        throw fail("E_UNSUPPORTED_TYPE", "类型 \(type.rawValue) 不支持客户端")
+    }
+    let version = try JSONDecoder().decode(
+        VersionPlan.self,
+        from: try loadFixture(given["snapshot"] as? String ?? "")
+    )
+    let platform = given["platform"] as? [String: Any]
+    var assetIndex: AssetIndexPlan?
+    if let relative = given["assetIndex"] as? String {
+        assetIndex = try JSONDecoder().decode(AssetIndexPlan.self, from: try loadFixture(relative))
+    }
+    let items = GamePlan.planClientDownload(
+        version: version,
+        root: given["root"] as? String ?? "",
+        type: type,
+        platform: PlanPlatform(
+            os: platform?["os"] as? String ?? "linux",
+            arch: platform?["arch"] as? String ?? "x86_64"
+        ),
+        assetIndex: assetIndex
+    )
+    return [
+        "items": items.map { item -> [String: Any] in
+            [
+                "url": item.url,
+                "path": item.path,
+                "sha1": item.sha1 ?? NSNull(),
+                "size": item.size ?? NSNull(),
+            ]
+        },
+        "count": items.count,
+    ]
+}
+
 func dispatch(_ request: [String: Any]) -> [String: Any] {
     guard let operation = request["operation"] as? String else {
         return err("E_USAGE", "缺少 operation")
@@ -295,6 +332,7 @@ func dispatch(_ request: [String: Any]) -> [String: Any] {
         switch operation {
         case "planLayout": return ok(opPlanLayout(request))
         case "planClientLaunch": return ok(try opPlanClientLaunch(request))
+        case "planClientDownload": return ok(try opPlanClientDownload(request))
         case "resolveVersion": return ok(try opResolveVersion(request))
         case "requiredJava": return ok(try opRequiredJava(request))
         case "verifyArtifact": return ok(try opVerifyArtifact(request))

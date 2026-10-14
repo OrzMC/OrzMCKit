@@ -24,7 +24,12 @@ public struct ClientLaunchPlan: Sendable, Equatable {
 
 /// 计划输入：版本 JSON 的**子集**（解耦生成 schema，便于离线一致性校验）。
 public struct VersionPlan: Decodable, Sendable {
-    public struct AssetIndex: Decodable, Sendable { public let id: String }
+    public struct AssetIndex: Decodable, Sendable {
+        public let id: String
+        public let url: String?
+        public let sha1: String?
+        public let size: Int?
+    }
     public struct Asset: Decodable, Sendable {
         public let url: String
         public let sha1: String?
@@ -219,6 +224,91 @@ public extension GamePlan {
             features: features
         )
     }
+}
+
+// MARK: - 客户端下载计划（planClientDownload）
+
+/// 单个下载项（url → 落地路径 + 可选哈希/大小）。
+public struct DownloadPlanItem: Sendable, Equatable {
+    public let url: String
+    public let path: String
+    public let sha1: String?
+    public let size: Int?
+
+    public init(url: String, path: String, sha1: String?, size: Int?) {
+        self.url = url
+        self.path = path
+        self.sha1 = sha1
+        self.size = size
+    }
+}
+
+/// 资源索引对象（`snapshots/assets/<id>.json` 的子集）。
+public struct AssetIndexPlan: Decodable, Sendable {
+    public struct Object: Decodable, Sendable {
+        public let hash: String
+        public let size: Int?
+    }
+    public let objects: [String: Object]?
+}
+
+public extension GamePlan {
+    /// 纯函数：由版本计划 + 布局 + 可选资源索引计算**客户端下载清单**。
+    ///
+    /// 顺序：客户端 jar → 资源索引 → 资源对象 → 库（按 rules 过滤，含 legacy natives）。
+    static func planClientDownload(
+        version: VersionPlan,
+        root: String,
+        type: GameType = .vanilla,
+        platform: PlanPlatform,
+        assetIndex: AssetIndexPlan? = nil
+    ) -> [DownloadPlanItem] {
+        let layout = layout(root: root, version: version.id, type: type, windows: platform.os == "windows")
+        let features = defaultFeatures()
+        var items: [DownloadPlanItem] = []
+
+        if let client = version.downloads?.client, !client.url.isEmpty {
+            items.append(.init(url: client.url, path: layout.clientJarPath, sha1: client.sha1, size: client.size))
+        }
+        if let index = version.assetIndex, let url = index.url, !url.isEmpty {
+            items.append(.init(
+                url: url,
+                path: "\(layout.clientIndexesDir)/\(index.id).json",
+                sha1: index.sha1,
+                size: index.size
+            ))
+        }
+        for object in (assetIndex?.objects ?? [:]).values {
+            let prefix = object.hash.prefix(2)
+            items.append(.init(
+                url: "https://resources.download.minecraft.net/\(prefix)/\(object.hash)",
+                path: "\(layout.clientObjectsDir)/\(prefix)/\(object.hash)",
+                sha1: object.hash,
+                size: object.size
+            ))
+        }
+        for library in (version.libraries ?? []) where allow(library.rules, platform: platform, features: features) {
+            guard let download = libraryDownload(library, platform: platform) else { continue }
+            items.append(.init(
+                url: download.url,
+                path: "\(layout.clientLibrariesDir)/\(download.path)",
+                sha1: download.sha1,
+                size: download.size
+            ))
+        }
+        return items
+    }
+}
+
+/// 选择库的下载产物：legacy（``natives``）按平台取 classifier，否则取 artifact。
+private func libraryDownload(_ library: LibraryPlan, platform: PlanPlatform) -> LibraryPlan.Download? {
+    if let natives = library.natives, !natives.isEmpty {
+        guard let classifier = natives[platform.os], let download = library.downloads?.classifiers?[classifier] else {
+            return nil
+        }
+        return download
+    }
+    return library.downloads?.artifact
 }
 
 // MARK: - internals
