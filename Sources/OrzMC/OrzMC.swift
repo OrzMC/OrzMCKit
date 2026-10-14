@@ -47,7 +47,8 @@ struct OrzMC {
             } else {
                 FileHandle.standardError.write(Data("错误：\(message)\n".utf8))
             }
-            exit(1)
+            // 规范 §6：用户取消退出 130，其余运行错误 1。
+            exit(code == "E_CANCELLED" ? 130 : 1)
         }
     }
 }
