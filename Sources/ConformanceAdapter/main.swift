@@ -188,6 +188,32 @@ func opCacheDecision(_ given: [String: Any]) -> [String: Any] {
     return ["action": action.rawValue]
 }
 
+func opPlanServerDeploy(_ given: [String: Any]) throws -> [String: Any] {
+    let type = GameType(rawValue: given["type"] as? String ?? "vanilla") ?? .vanilla
+    let data = try loadFixture(given["snapshot"] as? String ?? "")
+    let version = try JSONDecoder().decode(VersionPlan.self, from: data)
+    guard let plan = GamePlan.planServerDeploy(
+        version: version,
+        type: type,
+        root: given["root"] as? String ?? ""
+    ) else {
+        throw fail("E_UNSUPPORTED_OP", "\(type.rawValue) 无离线部署计划")
+    }
+    return [
+        "version": plan.version,
+        "type": plan.type,
+        "workdir": plan.workdir,
+        "jarName": plan.jarName,
+        "eula": plan.eula,
+        "coreArtifact": [
+            "url": plan.coreArtifact.url,
+            "sha1": plan.coreArtifact.sha1 ?? NSNull(),
+            "size": plan.coreArtifact.size ?? NSNull(),
+            "filename": plan.coreArtifact.filename,
+        ],
+    ]
+}
+
 func opPlanDownloadConcurrency(_ given: [String: Any]) -> [String: Any] {
     let plan = TransferPolicy.plan(sizeBytes: asInt(given["sizeBytes"]) ?? 0)
     return ["mode": plan.mode.rawValue, "parts": plan.parts]
@@ -235,6 +261,7 @@ func dispatch(_ request: [String: Any]) -> [String: Any] {
         case "requiredJava": return ok(try opRequiredJava(request))
         case "verifyArtifact": return ok(try opVerifyArtifact(request))
         case "cacheDecision": return ok(opCacheDecision(request))
+        case "planServerDeploy": return ok(try opPlanServerDeploy(request))
         case "planDownloadConcurrency": return ok(opPlanDownloadConcurrency(request))
         case "resolveConcurrency": return ok(opResolveConcurrency(request))
         case "nonTtyDefaults": return ok(try opNonTtyDefaults(request))

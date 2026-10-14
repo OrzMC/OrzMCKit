@@ -30,7 +30,10 @@ public struct VersionPlan: Decodable, Sendable {
         public let sha1: String?
         public let size: Int?
     }
-    public struct Downloads: Decodable, Sendable { public let client: Asset? }
+    public struct Downloads: Decodable, Sendable {
+        public let client: Asset?
+        public let server: Asset?
+    }
     public struct JavaVersion: Decodable, Sendable { public let majorVersion: Int? }
     public struct Arguments: Decodable, Sendable {
         public let jvm: [ArgumentEntry]?
