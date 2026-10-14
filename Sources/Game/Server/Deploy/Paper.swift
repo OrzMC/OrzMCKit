@@ -93,7 +93,7 @@ public struct PaperServer: Server {
     /// -w, --level-name, --world <String:      World name
     ///   World name>
     /// ```
-    public func start() async throws -> Process? {
+    public func start() async throws -> ManagedProcess? {
 
         let version = serverInfo.version
         let console = serverInfo.console

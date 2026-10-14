@@ -55,7 +55,7 @@ public struct VanillaServer: Server {
     /// --universe <String>  (default: .)
     /// --world <String>
     /// ```
-    public func start() async throws -> Process? {
+    public func start() async throws -> ManagedProcess? {
         
         guard let version = try await Mojang.manifest().versions.filter({ $0.id == serverInfo.version }).first,
               let gameVersion = try await version.gameVersion,

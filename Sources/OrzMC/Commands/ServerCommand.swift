@@ -82,9 +82,9 @@ struct ServerCommand: AsyncCommand {
             console.success(Constants.uiOutputServerType.string + type.rawValue)
             switch type {
             case .paper:
-                _ = try await PaperServer(serverInfo: serverInfo).start()
+                try await runForeground(PaperServer(serverInfo: serverInfo), console: console)
             case .vanilla:
-                _ = try await VanillaServer(serverInfo: serverInfo).start()
+                try await runForeground(VanillaServer(serverInfo: serverInfo), console: console)
             case .fabric, .forge:
                 // 显式不支持，不静默（对齐 docs/spec/behavior.md：不支持的类型须明确提示）。
                 console.error("暂未支持的服务端类型: \(type.rawValue)")
@@ -92,7 +92,15 @@ struct ServerCommand: AsyncCommand {
         }
         else{
             console.success(Constants.uiOutputServerType.string + GameType.paper.rawValue)
-            _ = try await PaperServer(serverInfo: serverInfo).start()
+            try await runForeground(PaperServer(serverInfo: serverInfo), console: console)
         }
+    }
+
+    /// 前台运行服务端并等待退出，返回其归一化退出码（B7）。
+    private func runForeground(_ server: some Server, console: any Console) async throws {
+        guard let process = try await server.start() else { return }
+        let code = await process.waitForExit()
+        console.success("服务端已退出（exit=\(code)）")
+    }
     }
 }

@@ -15,7 +15,7 @@ public extension Server {
         workDirectory: GameDir,
         javaExecutable: String,
         jarArgs: [String] = []
-    ) async throws -> Process {
+    ) async throws -> ManagedProcess {
         
         var args = [
             "-server",
@@ -78,7 +78,11 @@ public extension Server {
         } else {
             self.serverInfo.console?.warning("服务器运行为离线模式")
         }
-        let process = try Shell.run(path: javaExecutable, args: args, workDirectory: workDirectory.dirPath, terminationHandler: nil)
-        return process
+        // 受管进程（B7）：优雅停止 → SIGTERM → SIGKILL，退出码归一。
+        return try ProcessRunner.run(
+            executable: javaExecutable,
+            args: args,
+            workDirectory: workDirectory.dirPath
+        )
     }
 }
