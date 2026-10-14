@@ -9,7 +9,7 @@ import Testing
 @Suite struct CommandGroupTests {
     @Test func exposesSpecCommands() {
         let names = Set(CommandGroup(options: GlobalOptions()).commands.keys)
-        for expected in ["client", "server", "plugin", "list", "remove", "backup", "version", "completion", "capabilities", "update", "self-uninstall"] {
+        for expected in ["client", "server", "plugin", "list", "remove", "backup", "version", "completion", "capabilities", "update", "self-uninstall", "app"] {
             #expect(names.contains(expected))
         }
     }

@@ -13,6 +13,7 @@ enum Feature: String, CaseIterable {
     case capabilities
     case update
     case selfUninstall
+    case app
 
     /// CLI 中的命令名（`selfUninstall` → `self-uninstall`）。
     var commandName: String { self == .selfUninstall ? "self-uninstall" : rawValue }
@@ -39,6 +40,7 @@ struct CommandGroup: AsyncCommandGroup {
             .capabilities: CapabilitiesCommand(options: options),
             .update: UpdateCommand(options: options),
             .selfUninstall: SelfUninstallCommand(options: options),
+            .app: AppCommand(options: options),
         ]
     }
 
