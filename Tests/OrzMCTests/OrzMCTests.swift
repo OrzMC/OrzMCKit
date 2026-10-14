@@ -9,7 +9,7 @@ import Testing
 @Suite struct CommandGroupTests {
     @Test func exposesSpecCommands() {
         let names = Set(CommandGroup(options: GlobalOptions()).commands.keys)
-        for expected in ["client", "server", "plugin", "list", "remove", "backup", "version", "completion", "capabilities"] {
+        for expected in ["client", "server", "plugin", "list", "remove", "backup", "version", "completion", "capabilities", "update", "self-uninstall"] {
             #expect(names.contains(expected))
         }
     }
@@ -43,6 +43,49 @@ import Testing
         let parts = OrzMCVersion.current.split(separator: ".")
         #expect(parts.count == 3)
         #expect(parts.allSatisfy { Int($0) != nil })
+    }
+}
+
+/// 安装记录读取/回写（规范 install-update.md §3）。
+@Suite struct InstallManifestTests {
+    @Test func parsesKeyValues() {
+        let text = "tool=orzmc\nschema=1\nversion=v0.1.0\nplatform=macos-arm64\ninstall_dir=/tmp/bin\nbinary=/tmp/bin/orzmc\npath_file=/tmp/.zshrc\npath_line=export PATH=\"/tmp/bin:$PATH\"\nroot_dir=/tmp/mc\ncompletion_file=/tmp/_orzmc\n"
+        let manifest = InstallManifest(lines: text.split(separator: "\n").map(String.init))
+        #expect(manifest.tool == "orzmc")
+        #expect(manifest.version == "v0.1.0")
+        #expect(manifest.platform == "macos-arm64")
+        #expect(manifest.installDir == "/tmp/bin")
+        #expect(manifest.pathFile == "/tmp/.zshrc")
+        #expect(manifest.pathLine == "export PATH=\"/tmp/bin:$PATH\"")
+        #expect(manifest.rootDir == "/tmp/mc")
+        #expect(manifest.completionFile == "/tmp/_orzmc")
+    }
+
+    @Test func roundTrips() {
+        var manifest = InstallManifest(rootDir: "/tmp/mc")
+        manifest.version = "v0.1.0"
+        manifest.installDir = "/tmp/bin"
+        manifest.binary = "/tmp/bin/orzmc"
+        manifest.pathLine = "export PATH=\"/tmp/bin:$PATH\""
+        let reparsed = InstallManifest(lines: manifest.serialized.split(separator: "\n").map(String.init))
+        #expect(reparsed.version == "v0.1.0")
+        #expect(reparsed.pathLine == manifest.pathLine)
+        #expect(reparsed.rootDir == "/tmp/mc")
+    }
+}
+
+/// 版本比较（自升级判定）。
+@Suite struct SelfUpdateTests {
+    @Test func versionCompare() {
+        #expect(SelfUpdate.isNewer("v0.1.0", than: "v0.0.6"))
+        #expect(!SelfUpdate.isNewer("v0.0.6", than: "v0.0.6"))
+        #expect(!SelfUpdate.isNewer("v0.0.5", than: "v0.0.6"))
+        #expect(SelfUpdate.isNewer("v1.0", than: "v0.9.9"))
+    }
+
+    @Test func normalize() {
+        #expect(SelfUpdate.normalize("0.1.0") == "v0.1.0")
+        #expect(SelfUpdate.normalize("v0.1.0") == "v0.1.0")
     }
 }
 

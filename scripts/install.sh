@@ -8,7 +8,7 @@
 #   ORZMC_INSTALL_DIR  二进制落点（缺省 ${XDG_BIN_HOME:-$HOME/.local/bin}）
 #   ORZMC_ROOT_DIR     游戏根目录（写入 install.conf，缺省 ~/minecraft）
 #
-# 契约见 docs/spec/install-update.md（本仓库父仓库 OrzMC/docs/spec）。
+# 契约见父仓库 OrzMC/docs/spec/install-update.md。
 set -eu
 
 REPO="OrzMC/OrzMCKit"
@@ -65,6 +65,8 @@ mv -f "${tmp_dir}/${asset}" "${install_dir}/${BIN_NAME}"
 printf '已安装: %s\n' "${install_dir}/${BIN_NAME}"
 
 # PATH 集成（幂等；PATH 已含 install_dir 则不动 rc）。
+path_file=""
+path_line=""
 case ":${PATH}:" in
   *":${install_dir}:"*) : ;;
   *)
@@ -76,6 +78,8 @@ case ":${PATH}:" in
     line="export PATH=\"${install_dir}:\$PATH\""
     if ! grep -Fqx "$line" "$rc" 2>/dev/null; then
       printf '\n%s\n' "$line" >> "$rc"
+      path_file="$rc"
+      path_line="$line"
       printf '已把 %s 写入 %s\n' "$install_dir" "$rc"
       printf '请新开终端或执行: . %s\n' "$rc"
     fi
@@ -83,18 +87,30 @@ case ":${PATH}:" in
 esac
 
 # Shell 补全（命令自实现；未实现时静默跳过）。
-"${install_dir}/${BIN_NAME}" completion install >/dev/null 2>&1 || true
+completion_file=""
+case "$(basename "${SHELL:-sh}")" in
+  zsh) completion_file="$HOME/.zsh/completions/_orzmc" ;;
+  bash) completion_file="$HOME/.local/share/bash-completion/completions/orzmc" ;;
+esac
+if ! "${install_dir}/${BIN_NAME}" completion install >/dev/null 2>&1; then
+  completion_file=""
+fi
+
+installed_version="$("${install_dir}/${BIN_NAME}" version 2>/dev/null | awk '{print $2}')"
 
 root_dir="${ORZMC_ROOT_DIR:-$HOME/minecraft}"
 {
   printf 'tool=orzmc\n'
   printf 'schema=1\n'
+  printf 'version=%s\n' "$installed_version"
   printf 'platform=macos-%s\n' "$arch"
   printf 'install_dir=%s\n' "$install_dir"
   printf 'binary=%s\n' "${install_dir}/${BIN_NAME}"
   printf 'source=%s\n' "$base"
+  [ -n "$path_file" ] && printf 'path_file=%s\n' "$path_file"
+  [ -n "$path_line" ] && printf 'path_line=%s\n' "$path_line"
   printf 'root_dir=%s\n' "$root_dir"
-  printf 'surface=cli\n'
+  [ -n "$completion_file" ] && printf 'completion_file=%s\n' "$completion_file"
 } > "$manifest"
 printf '安装记录: %s\n' "$manifest"
 

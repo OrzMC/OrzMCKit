@@ -11,6 +11,11 @@ enum Feature: String, CaseIterable {
     case version
     case completion
     case capabilities
+    case update
+    case selfUninstall
+
+    /// CLI 中的命令名（`selfUninstall` → `self-uninstall`）。
+    var commandName: String { self == .selfUninstall ? "self-uninstall" : rawValue }
 }
 
 struct CommandGroup: AsyncCommandGroup {
@@ -32,13 +37,15 @@ struct CommandGroup: AsyncCommandGroup {
             .version: VersionCommand(options: options),
             .completion: CompletionCommand(options: options, root: { CommandGroup(options: options) }),
             .capabilities: CapabilitiesCommand(options: options),
+            .update: UpdateCommand(options: options),
+            .selfUninstall: SelfUninstallCommand(options: options),
         ]
     }
 
     var help: String { Constants.commandGroupHelp.string }
 
     var commands: [String: any AnyAsyncCommand] {
-        .init(uniqueKeysWithValues: features.map { ($0.key.rawValue, $0.value) })
+        .init(uniqueKeysWithValues: features.map { ($0.key.commandName, $0.value) })
     }
 
     /// 能力清单（命令 / 选项），供 `capabilities` 使用；`fabric` 隐藏，不列入。

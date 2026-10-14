@@ -69,3 +69,5 @@ extension BackupCommand: CapabilityDescribing {}
 extension VersionCommand: CapabilityDescribing {}
 extension CompletionCommand: CapabilityDescribing {}
 extension CapabilitiesCommand: CapabilityDescribing {}
+extension UpdateCommand: CapabilityDescribing {}
+extension SelfUninstallCommand: CapabilityDescribing {}
