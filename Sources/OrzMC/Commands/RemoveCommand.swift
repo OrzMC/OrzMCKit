@@ -7,7 +7,7 @@ struct RemoveCommand: AsyncCommand {
 
     struct Signature: CommandSignature {
         @Option(name: "version", short: "v", help: "要移除的 Minecraft 版本")
-        var version: String
+        var version: String?
 
         @Flag(name: "server", help: "移除服务端(默认移除客户端)")
         var server: Bool
@@ -25,6 +25,11 @@ struct RemoveCommand: AsyncCommand {
         let console = context.console
         let root = signature.rootDir ?? GamePlan.defaultRoot
 
+        guard let version = signature.version else {
+            console.error("需要指定要移除的版本 (-v)")
+            return
+        }
+
         var type: GameType?
         if signature.server {
             guard let raw = signature.type, let parsed = GameType(rawValue: raw) else {
@@ -34,11 +39,11 @@ struct RemoveCommand: AsyncCommand {
             type = parsed
         }
 
-        let removed = GamePlan.removeInstalled(version: signature.version, server: signature.server, type: type, root: root)
+        let removed = GamePlan.removeInstalled(version: version, server: signature.server, type: type, root: root)
         if removed {
-            console.success("已移除 \(signature.version)")
+            console.success("已移除 \(version)")
         } else {
-            console.error("未找到要移除的版本: \(signature.version)")
+            console.error("未找到要移除的版本: \(version)")
         }
     }
 }
