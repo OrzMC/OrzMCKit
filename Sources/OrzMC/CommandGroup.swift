@@ -19,6 +19,5 @@ struct CommandGroup: AsyncCommandGroup {
         let sequence: [(String, any AnyAsyncCommand)] = features.keys.map { ($0.rawValue, features[$0]!) }
         return .init(uniqueKeysWithValues:sequence)
     }
-    var defaultCommand: (any AnyAsyncCommand)? { features[.client] }
 }
 

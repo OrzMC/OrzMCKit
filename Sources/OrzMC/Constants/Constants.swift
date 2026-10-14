@@ -21,7 +21,7 @@ enum Constants: String {
     case uiOutputPluginSearchNoResult = "搜索无结果"
     // Common
     case commandGroupHelp = "Minecraft 客户端/服务端部署工具"
-    case DebugHelp = "调试模式"
+    case DebugHelp = "输出调试日志"
     case VersionHelp = "游戏版本号"
     
     // Client
@@ -33,14 +33,14 @@ enum Constants: String {
     
     // Server
     case serverHelp = "服务端相关"
-    case serverGUIHelp = "服务器以GUI方式启动"
+    case serverGUIHelp = "无窗口模式启动（不弹服务端 GUI）"
     case serverForceUpgradeHelp = "强制升级地图"
     case serverTypeHelp = "服务器类型: paper/vanilla, 默认：paper"
     case serverMinMemHelp = "服务端运行使用的最小内存，默认为："
     case serverMaxMemHelp = "服务端运行使用的最大内存，默认为："
     case serverOnlineModeHelp = "服务端运行时是否使用Online模式，默认为：false"
     case serverJarHelp = "查看服务端jar包的帮助信息"
-    case serverJarOptionHelp = "jar文件运行时额外选项, 字符串参数以 a: 开头，例如：--jar-opts \"a:--help\""
+    case serverJarOptionHelp = "服务端程序参数（空格分隔的字符串，如：--server-args \"--port 25565\"）"
     case serverDemoModeHelp = "演示模式"
     case serverKillAllHelp = "杀死所有正在运行的服务端"
     
