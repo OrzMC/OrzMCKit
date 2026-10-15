@@ -28,6 +28,9 @@ enum ErrorPresentation {
             case .worldNotFound(let path): return "未找到世界目录: \(path)"
             }
         }
+        if let error = error as? AuthError {
+            return error.message
+        }
         return String(describing: error)
     }
 }

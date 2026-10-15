@@ -59,6 +59,18 @@ func loadFixture(_ relative: String) throws -> Data {
     return data
 }
 
+/// 解码版本 JSON，并以显式 `given.version` 覆盖 `id`。
+/// 规范：路径 / 令牌 / `--version` 以显式传入的版本为准（与参考 / Python 适配器对齐）；
+/// 而引擎以 `VersionPlan.id` 为版本源，故在适配器接缝处覆盖之。
+func decodeVersionPlan(_ given: [String: Any]) throws -> VersionPlan {
+    let raw = try loadFixture(given["snapshot"] as? String ?? "")
+    var json = (try JSONSerialization.jsonObject(with: raw)) as? [String: Any] ?? [:]
+    if let versionId = given["version"] as? String, !versionId.isEmpty {
+        json["id"] = versionId
+    }
+    return try JSONDecoder().decode(VersionPlan.self, from: try JSONSerialization.data(withJSONObject: json))
+}
+
 // MARK: - operations
 
 func opPlanLayout(_ given: [String: Any]) -> [String: Any] {
@@ -84,13 +96,6 @@ func opPlanLayout(_ given: [String: Any]) -> [String: Any] {
         "clientNativesDir": layout.clientNativesDir,
         "clientJarPath": layout.clientJarPath,
         "clientProfilesDir": layout.clientProfilesDir,
-        "serverDir": layout.serverDir,
-        "serverJarName": layout.serverJarName,
-        "serverJarPath": layout.serverJarPath,
-        "serverEulaPath": layout.serverEulaPath,
-        "serverPropertiesPath": layout.serverPropertiesPath,
-        "serverPluginsDir": layout.serverPluginsDir,
-        "serverWorldDir": layout.serverWorldDir,
         "javaDir": layout.javaDir,
         "cacheDir": layout.cacheDir,
         "versionManifestPath": layout.versionManifestPath,
@@ -98,6 +103,16 @@ func opPlanLayout(_ given: [String: Any]) -> [String: Any] {
         "downloadTmpDir": layout.downloadTmpDir,
         "backupDir": layout.backupDir,
     ]
+    // 无 `type` 时不产出 server 字段（与参考 / Python 对齐；fixture `layout/no-type-*`）。
+    if given["type"] != nil {
+        out["serverDir"] = layout.serverDir
+        out["serverJarName"] = layout.serverJarName
+        out["serverJarPath"] = layout.serverJarPath
+        out["serverEulaPath"] = layout.serverEulaPath
+        out["serverPropertiesPath"] = layout.serverPropertiesPath
+        out["serverPluginsDir"] = layout.serverPluginsDir
+        out["serverWorldDir"] = layout.serverWorldDir
+    }
     if let majorDir = layout.javaMajorDir { out["javaMajorDir"] = majorDir }
     if let executable = layout.javaExecutable { out["javaExecutable"] = executable }
     if let objectPath = layout.clientObjectPath { out["clientObjectPath"] = objectPath }
@@ -109,8 +124,7 @@ func opPlanClientLaunch(_ given: [String: Any]) throws -> [String: Any] {
     guard type.isClientCapable else {
         throw fail("E_UNSUPPORTED_TYPE", "类型 \(type.rawValue) 不支持客户端")
     }
-    let data = try loadFixture(given["snapshot"] as? String ?? "")
-    let version = try JSONDecoder().decode(VersionPlan.self, from: data)
+    let version = try decodeVersionPlan(given)
     let platform = given["platform"] as? [String: Any]
     let optionsInput = given["options"] as? [String: Any]
 
@@ -292,10 +306,7 @@ func opPlanClientDownload(_ given: [String: Any]) throws -> [String: Any] {
     guard type.isClientCapable else {
         throw fail("E_UNSUPPORTED_TYPE", "类型 \(type.rawValue) 不支持客户端")
     }
-    let version = try JSONDecoder().decode(
-        VersionPlan.self,
-        from: try loadFixture(given["snapshot"] as? String ?? "")
-    )
+    let version = try decodeVersionPlan(given)
     let platform = given["platform"] as? [String: Any]
     var assetIndex: AssetIndexPlan?
     if let relative = given["assetIndex"] as? String {
@@ -332,6 +343,107 @@ func opNormalizeExit(_ given: [String: Any]) -> [String: Any] {
     return ["exitCode": raw, "signaled": false, "signal": NSNull()]
 }
 
+// MARK: - auth（正版授权纯映射，见 docs/spec/auth.md）
+
+func authRequestDict(_ request: AuthRequest) -> [String: Any] {
+    var out: [String: Any] = ["method": request.method, "url": request.url]
+    if !request.headers.isEmpty { out["headers"] = request.headers }
+    if let form = request.form { out["form"] = form }
+    if let body = request.body, let object = try? JSONSerialization.jsonObject(with: body) {
+        out["body"] = object
+    }
+    return out
+}
+
+func opAuthDeviceCodeRequest(_ given: [String: Any]) -> [String: Any] {
+    let clientId = given["clientId"] as? String ?? ""
+    let scope = given["scope"] as? String ?? AuthMapping.defaultScope
+    return authRequestDict(AuthMapping.deviceCodeRequest(clientId: clientId, scope: scope))
+}
+
+func opAuthDeviceCodeResult(_ given: [String: Any]) throws -> [String: Any] {
+    guard let response = given["response"] as? [String: Any], let device = AuthMapping.deviceCodeResult(response) else {
+        throw fail("E_INTERNAL", "设备码响应缺字段")
+    }
+    return [
+        "deviceCode": device.deviceCode,
+        "userCode": device.userCode,
+        "verificationUri": device.verificationUri,
+        "expiresIn": device.expiresIn,
+        "interval": device.interval,
+        "message": device.message ?? NSNull(),
+    ]
+}
+
+func opAuthXboxRequest(_ given: [String: Any]) -> [String: Any] {
+    authRequestDict(AuthMapping.xboxRequest(msaAccessToken: given["msaAccessToken"] as? String ?? ""))
+}
+
+func opAuthXboxResult(_ given: [String: Any]) throws -> [String: Any] {
+    guard let response = given["response"] as? [String: Any], let token = AuthMapping.xboxResult(response) else {
+        throw fail("E_INTERNAL", "XBL 响应缺字段")
+    }
+    return ["token": token.token, "userHash": token.userHash]
+}
+
+func opAuthXstsRequest(_ given: [String: Any]) -> [String: Any] {
+    let relying = given["relyingParty"] as? String ?? AuthMapping.xstsRelyingParty
+    return authRequestDict(AuthMapping.xstsRequest(xblToken: given["xblToken"] as? String ?? "", relyingParty: relying))
+}
+
+func opAuthXstsResult(_ given: [String: Any]) throws -> [String: Any] {
+    guard let response = given["response"] as? [String: Any], let token = AuthMapping.xstsResult(response) else {
+        throw fail("E_INTERNAL", "XSTS 响应缺字段")
+    }
+    return ["token": token.token, "userHash": token.userHash]
+}
+
+func opAuthMinecraftLoginRequest(_ given: [String: Any]) -> [String: Any] {
+    authRequestDict(
+        AuthMapping.minecraftLoginRequest(
+            userHash: given["userHash"] as? String ?? "",
+            xstsToken: given["xstsToken"] as? String ?? ""
+        )
+    )
+}
+
+func opAuthMinecraftLoginResult(_ given: [String: Any]) throws -> [String: Any] {
+    guard let response = given["response"] as? [String: Any], let token = AuthMapping.minecraftLoginResult(response) else {
+        throw fail("E_INTERNAL", "MC 登录响应缺字段")
+    }
+    return ["accessToken": token.accessToken, "expiresIn": token.expiresIn]
+}
+
+func opAuthProfileRequest(_ given: [String: Any]) -> [String: Any] {
+    authRequestDict(AuthMapping.profileRequest(accessToken: given["accessToken"] as? String ?? ""))
+}
+
+func opAuthProfileResult(_ given: [String: Any]) throws -> [String: Any] {
+    guard let response = given["response"] as? [String: Any], let profile = AuthMapping.profileResult(response) else {
+        throw fail("E_INTERNAL", "档案响应缺字段")
+    }
+    return ["uuid": profile.uuid, "name": profile.name]
+}
+
+func opAuthTokenState(_ given: [String: Any]) -> [String: Any] {
+    let status = AuthMapping.tokenState(
+        expiresAt: asDouble(given["expiresAt"]) ?? 0,
+        now: asDouble(given["now"]) ?? 0,
+        skewSeconds: asInt(given["skewSeconds"]) ?? AuthMapping.defaultSkewSeconds
+    )
+    return ["state": status.state.rawValue, "remainingSeconds": status.remainingSeconds]
+}
+
+func opAuthClassifyTokenError(_ given: [String: Any]) -> [String: Any] {
+    let action = AuthMapping.classifyTokenError(given["error"] as? String)
+    return ["action": action.action.rawValue, "code": action.code ?? NSNull()]
+}
+
+func opAuthClassifyXstsError(_ given: [String: Any]) -> [String: Any] {
+    let code = AuthMapping.classifyXstsError(status: asInt(given["status"]) ?? 0, xerr: given["xerr"])
+    return ["code": code ?? NSNull()]
+}
+
 func dispatch(_ request: [String: Any]) -> [String: Any] {
     guard let operation = request["operation"] as? String else {
         return err("E_USAGE", "缺少 operation")
@@ -352,6 +464,19 @@ func dispatch(_ request: [String: Any]) -> [String: Any] {
         case "nonTtyDefaults": return ok(try opNonTtyDefaults(request))
         case "normalizeProgress": return ok(opNormalizeProgress(request))
         case "normalizeExit": return ok(opNormalizeExit(request))
+        case "authDeviceCodeRequest": return ok(opAuthDeviceCodeRequest(request))
+        case "authDeviceCodeResult": return ok(try opAuthDeviceCodeResult(request))
+        case "authXboxRequest": return ok(opAuthXboxRequest(request))
+        case "authXboxResult": return ok(try opAuthXboxResult(request))
+        case "authXstsRequest": return ok(opAuthXstsRequest(request))
+        case "authXstsResult": return ok(try opAuthXstsResult(request))
+        case "authMinecraftLoginRequest": return ok(opAuthMinecraftLoginRequest(request))
+        case "authMinecraftLoginResult": return ok(try opAuthMinecraftLoginResult(request))
+        case "authProfileRequest": return ok(opAuthProfileRequest(request))
+        case "authProfileResult": return ok(try opAuthProfileResult(request))
+        case "authTokenState": return ok(opAuthTokenState(request))
+        case "authClassifyTokenError": return ok(opAuthClassifyTokenError(request))
+        case "authClassifyXstsError": return ok(opAuthClassifyXstsError(request))
         default: return err("E_UNSUPPORTED_OP", "未实现操作 \(operation)")
         }
     } catch let error as ConformanceError {

@@ -18,6 +18,9 @@ struct RemoveCommand: AsyncCommand {
 
         @Option(name: "root-dir", help: "游戏根目录(默认 ~/minecraft)")
         var rootDir: String?
+
+        @Flag(name: "yes", short: "y", help: "跳过确认")
+        var yes: Bool
     }
 
     var help: String = "移除已安装的版本(客户端或某类型的服务端)"
@@ -28,6 +31,12 @@ struct RemoveCommand: AsyncCommand {
 
         guard let version = signature.version else {
             throw CLIError("需要指定要移除的版本 (-v)", code: "E_USAGE")
+        }
+
+        let interactive = !options.json && TerminalEnvironment.isInteractive
+        if !signature.yes, interactive,
+           !console.confirm("移除 \(version)?".consoleText(.warning)) {
+            throw CLIError("已取消移除", code: "E_CANCELLED")
         }
 
         var type: GameType?

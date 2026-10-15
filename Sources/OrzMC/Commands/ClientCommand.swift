@@ -1,4 +1,5 @@
 import ConsoleKit
+import Foundation
 import Game
 
 struct ClientCommand: AsyncCommand {
@@ -36,32 +37,46 @@ struct ClientCommand: AsyncCommand {
         // 非 TTY / `--json`：不阻塞（B9 / 规范 §7）。
         let interactive = !options.json && TerminalEnvironment.isInteractive
 
-        let version = try await console.chooseGameVersion(signature.version, interactive: interactive)
-
-        // 非 TTY：用户名默认 guest，不阻塞（B9）。
-        let username = signature.username ?? (interactive
-            ? console.userInput(
-                hint: Constants.uiInputUsername.string,
-                completedHint: Constants.uiOutputUsername.string
-            )
-            : "guest")
-
         let debug = signature.debug || options.verbose
 
-        // 显示指定是否进行正版授权
-        var accountName: String? = nil
-        if signature.authenticate && interactive {
-            accountName = console.userInput(hint: Constants.uiInputAuthAccount.string)
-            if let accountName = accountName, accountName.count > 0 {
-                console.output(Constants.uiOutputAuthAccount.string.consoleText(.success) + accountName.consoleText(.info))
-                let accountPassword = console.userInput(hint: Constants.uiInputAuthPassword.string)
-                if accountPassword.count > 0 {
-                    let secureText = String(repeating: Constants.uiOutputPasswordMask.string, count: accountPassword.count)
-                    console.output(Constants.uiOutputAuthPassword.string.consoleText(.success) + secureText.consoleText(.info))
+        // 正版授权（Microsoft 设备码流程）：结果贯穿 ClientInfo（用户名/令牌/uuid/user_type）。
+        // 放在版本选择之前：缺 client_id 时快速失败，不触发网络/交互。
+        var session: AuthSession?
+        if signature.authenticate {
+            let environment = ProcessInfo.processInfo.environment
+            let clientId = (environment["ORZMC_AZURE_CLIENT_ID"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !clientId.isEmpty else {
+                throw CLIError(
+                    "未配置 Azure 应用 client_id(设置 ORZMC_AZURE_CLIENT_ID);见 docs/spec/auth.md",
+                    code: "E_AUTH_NOT_CONFIGURED"
+                )
+            }
+            do {
+                session = try await authenticate(clientId: clientId) { device in
+                    FileHandle.standardError.write(
+                        Data("请在浏览器打开 \(device.verificationUri) 并输入代码 \(device.userCode)\n".utf8)
+                    )
                 }
+            } catch let error as AuthError {
+                throw CLIError(error.message, code: error.code)
             }
         }
-        // ---
+
+        let version = try await console.chooseGameVersion(signature.version, interactive: interactive)
+
+        // 非 TTY：用户名默认 guest，不阻塞（B9）。`--auth` 时不提示（认证后以档案用户名为准）。
+        let username: String
+        if signature.authenticate {
+            username = signature.username ?? "guest"
+        } else {
+            username = signature.username ?? (interactive
+                ? console.userInput(
+                    hint: Constants.uiInputUsername.string,
+                    completedHint: Constants.uiOutputUsername.string
+                )
+                : "guest")
+        }
+        let resolvedUsername = session?.name ?? username
 
         let minMem = signature.minMem ?? Constants.clientMinMemDefault
         let maxMem = signature.maxMem ?? Constants.clientMaxMemDefault
@@ -69,11 +84,13 @@ struct ClientCommand: AsyncCommand {
         // 参数收集完成
         let clientInfo = ClientInfo(
             version: version,
-            username: username,
+            username: resolvedUsername,
             rootDir: options.resolveRoot(signature.rootDir),
             debug: debug,
-            authenticate: signature.authenticate,
-            accountName: accountName,
+            authenticate: false,
+            accessToken: session?.accessToken,
+            authUUID: session?.uuid,
+            userType: session != nil ? "msa" : "legacy",
             minMem: minMem,
             maxMem: maxMem,
             console: console
@@ -83,10 +100,14 @@ struct ClientCommand: AsyncCommand {
         let code = try await laucher.run()
 
         if options.json {
-            JSONOutput.success(
-                command: "client",
-                data: ["version": version.id, "username": username, "exitCode": code]
-            )
+            var data: [String: Any] = ["version": version.id, "username": resolvedUsername, "exitCode": code]
+            if let session {
+                data["authenticated"] = true
+                data["uuid"] = session.uuid
+                data["expiresAt"] = session.expiresAt
+                data["source"] = session.source
+            }
+            JSONOutput.success(command: "client", data: data)
         }
     }
 }

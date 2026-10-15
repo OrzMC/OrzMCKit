@@ -26,7 +26,7 @@ enum Constants: String {
     
     // Client
     case clientHelp = "客户端相关命令"
-    case clientAuthHelp = "是否验证正版帐号(默认不验证)"
+    case clientAuthHelp = "正版授权(Microsoft 设备码流程;需 ORZMC_AZURE_CLIENT_ID)"
     case clientUsernameHelp = "登录用户名"
     case clientMinMemHelp = "客户端运行使用的最小内存，默认为："
     case clientMaxMemHelp = "客户端运行使用的最大内存，默认为："

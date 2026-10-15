@@ -9,10 +9,15 @@ struct SignatureValueSpec: Sendable {
     let kind: String
     let help: String
     let flag: Bool
+    /// MCP `inputSchema` 类型（`flag` → boolean；据 `Option<Value>` 反射）。
+    let schemaType: String
+
+    /// 位置参数在 ConsoleKit 中无值即为用法错误 → 视为必填（与 Python `capabilities` 对齐）。
+    var required: Bool { kind == "argument" }
 
     var json: [String: Any] {
         // 键对齐 Python `capabilities` 的 option schema（未知字段给 null）。
-        ["names": names, "type": NSNull(), "required": false, "flag": flag, "default": NSNull(), "help": help]
+        ["names": names, "type": NSNull(), "required": required, "flag": flag, "default": NSNull(), "help": help]
     }
 }
 
@@ -49,12 +54,32 @@ extension AsyncCommand {
             } else {
                 kind = "flag"
             }
-            var names = ["--\(name)"]
-            if hasShort, let short = mirror.descendant("short") as? Character {
+            var names: [String]
+            if kind == "argument" {
+                names = [name]
+            } else if hasShort, let short = mirror.descendant("short") as? Character {
                 names = ["-\(short)", "--\(name)"]
+            } else {
+                names = ["--\(name)"]
             }
-            return SignatureValueSpec(names: names, kind: kind, help: help, flag: kind == "flag")
+            let schemaType = kind == "flag" ? "boolean" : Self.schemaType(of: child.value)
+            return SignatureValueSpec(
+                names: names,
+                kind: kind,
+                help: help,
+                flag: kind == "flag",
+                schemaType: schemaType
+            )
         }
+    }
+
+    /// 从属性包装器实例反推 MCP `inputSchema` 类型。
+    static func schemaType(of value: Any) -> String {
+        if value is Option<Int> { return "integer" }
+        if value is Option<Double> { return "number" }
+        if value is Option<Bool> { return "boolean" }
+        if value is Option<String> { return "string" }
+        return "string"
     }
 }
 
@@ -72,3 +97,4 @@ extension CapabilitiesCommand: CapabilityDescribing {}
 extension UpdateCommand: CapabilityDescribing {}
 extension SelfUninstallCommand: CapabilityDescribing {}
 extension AppCommand: CapabilityDescribing {}
+extension MCPCommand: CapabilityDescribing {}
