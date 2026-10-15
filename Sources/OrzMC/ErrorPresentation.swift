@@ -26,6 +26,7 @@ enum ErrorPresentation {
             switch error {
             case .noGameVersions: return "无法获取版本清单(请检查网络连接)"
             case .worldNotFound(let path): return "未找到世界目录: \(path)"
+            case .clientJarNotFound(let path): return "未找到客户端 jar，无法提取音乐: \(path)"
             }
         }
         if let error = error as? AuthError {

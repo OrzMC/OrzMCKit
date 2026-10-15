@@ -57,6 +57,9 @@ struct ServerCommand: AsyncCommand {
         @Flag(name: "force-download", help: "强制重新下载服务端核心")
         var forceDownload: Bool
 
+        @Option(name: "download-threads", short: "j", help: "下载并发数(1-64；缺省用引擎默认)")
+        var downloadThreads: Int?
+
         @Option(name: "root-dir", help: "游戏根目录(默认 ~/minecraft)")
         var rootDir: String?
     }
@@ -75,6 +78,10 @@ struct ServerCommand: AsyncCommand {
         }
 
         let interactive = !options.json && TerminalEnvironment.isInteractive
+
+        if let threads = signature.downloadThreads {
+            Downloader.concurrency = min(max(threads, 1), 64)
+        }
         let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh)
 
         // `--nogui` 默认 false = 弹 GUI（对齐规范/Python）；给定时 headless。

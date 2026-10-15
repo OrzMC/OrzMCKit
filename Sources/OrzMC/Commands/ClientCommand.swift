@@ -1,6 +1,7 @@
 import ConsoleKit
 import Foundation
 import Game
+import JokerKits
 
 struct ClientCommand: AsyncCommand {
     let options: GlobalOptions
@@ -30,6 +31,12 @@ struct ClientCommand: AsyncCommand {
         @Flag(name: "refresh", help: "忽略元数据缓存(默认 24 小时内复用)")
         var refresh: Bool
 
+        @Flag(name: "extract-music", help: "提取客户端音乐后退出")
+        var extractMusic: Bool
+
+        @Option(name: "download-threads", short: "j", help: "下载并发数(1-64；缺省用引擎默认)")
+        var downloadThreads: Int?
+
         @Option(name: "root-dir", help: "游戏根目录(默认 ~/minecraft)")
         var rootDir: String?
     }
@@ -42,6 +49,10 @@ struct ClientCommand: AsyncCommand {
 
         // 非 TTY / `--json`：不阻塞（B9 / 规范 §7）。
         let interactive = !options.json && TerminalEnvironment.isInteractive
+
+        if let threads = signature.downloadThreads {
+            Downloader.concurrency = min(max(threads, 1), 64)
+        }
 
         let debug = signature.debug || options.verbose
 
@@ -103,6 +114,17 @@ struct ClientCommand: AsyncCommand {
             jvmArgs: jvmArgs,
             console: console
         )
+        // 提取音乐：只确保客户端 jar，解压 .ogg 后退出（不启动）。
+        if signature.extractMusic {
+            let count = try await Launcher(clientInfo: clientInfo).extractMusic()
+            if options.json {
+                JSONOutput.success(
+                    command: "client",
+                    data: ["version": version.id, "mode": "extract-music", "count": count]
+                )
+            }
+            return
+        }
         // 启动 Launcher
         var laucher = Launcher(clientInfo: clientInfo)
         let code = try await laucher.run()
