@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/OrzMC/OrzMCKit/compare/v0.2.0...v0.3.0) (2026-10-15)
+
+
+### Features
+
+* server --print-jar-help 改名 + client --jvm-opts ([#20](https://github.com/OrzMC/OrzMCKit/issues/20)) ([0df2feb](https://github.com/OrzMC/OrzMCKit/commit/0df2feb44fd95e414fcc1c3e993f000c66a83b2e))
+
 ## [0.2.0](https://github.com/OrzMC/OrzMCKit/compare/v0.1.0...v0.2.0) (2026-10-15)
 
 
