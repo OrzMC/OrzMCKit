@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0](https://github.com/OrzMC/OrzMCKit/compare/v0.1.0...v0.2.0) (2026-10-15)
+
+
+### Features
+
+* --auth 离线链路 + orzmc mcp + 命令面收敛与一致性适配 ([#19](https://github.com/OrzMC/OrzMCKit/issues/19)) ([e237d32](https://github.com/OrzMC/OrzMCKit/commit/e237d32e70b716dc5b914e8e79e5c2217cbabc9f))
+* **conformance:** planClientDownload 支持 legacy natives + Maven 回退 ([#18](https://github.com/OrzMC/OrzMCKit/issues/18)) ([599616b](https://github.com/OrzMC/OrzMCKit/commit/599616baa42896b92001c2528db0c08a01893aa3))
+* **conformance:** 实现 planClientDownload（引擎纯计划 + 适配器） ([#15](https://github.com/OrzMC/OrzMCKit/issues/15)) ([064bca1](https://github.com/OrzMC/OrzMCKit/commit/064bca179b0d565d114f4e2d8d4563caf0f7702f))
+
 ## [0.1.0](https://github.com/OrzMC/OrzMCKit/compare/v0.0.6...v0.1.0) (2026-10-14)
 
 
