@@ -24,6 +24,9 @@ struct ClientCommand: AsyncCommand {
         @Option(name: "max-mem", short: "x", help: Constants.clientMaxMemHelp.string)
         var maxMem: String?
 
+        @Option(name: "jvm-opts", help: "附加 JVM 旗标(空格分隔)")
+        var jvmOpts: String?
+
         @Option(name: "root-dir", help: "游戏根目录(默认 ~/minecraft)")
         var rootDir: String?
     }
@@ -80,6 +83,7 @@ struct ClientCommand: AsyncCommand {
 
         let minMem = signature.minMem ?? Constants.clientMinMemDefault
         let maxMem = signature.maxMem ?? Constants.clientMaxMemDefault
+        let jvmArgs = (signature.jvmOpts ?? "").split(separator: " ").map(String.init)
 
         // 参数收集完成
         let clientInfo = ClientInfo(
@@ -93,6 +97,7 @@ struct ClientCommand: AsyncCommand {
             userType: session != nil ? "msa" : "legacy",
             minMem: minMem,
             maxMem: maxMem,
+            jvmArgs: jvmArgs,
             console: console
         )
         // 启动 Launcher

@@ -32,6 +32,8 @@ public struct ClientInfo: Sendable {
     // JVM启动内存占用参数
     var minMem: String
     var maxMem: String
+    /// 用户附加 JVM 旗标（`--jvm-opts`，空格分隔已拆分为数组）。
+    var jvmArgs: [String]
     
     // Fabric
     var fabricModel: FabricModel?
@@ -54,6 +56,7 @@ public struct ClientInfo: Sendable {
         userType: String = "legacy",
         minMem: String,
         maxMem: String,
+        jvmArgs: [String] = [],
         fabricModel: FabricModel? = nil,
         console: (any Console)? = nil
     ) {
@@ -71,6 +74,7 @@ public struct ClientInfo: Sendable {
         self.userType = userType
         self.minMem = minMem
         self.maxMem = maxMem
+        self.jvmArgs = jvmArgs
         self.fabricModel = fabricModel
         self.console = console
     }

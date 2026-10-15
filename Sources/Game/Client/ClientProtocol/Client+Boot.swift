@@ -87,6 +87,8 @@ extension Client {
         if let fabricJVMOptions = self.fabricClientJVMOptions() {
             jvmArgsArray.append(contentsOf: fabricJVMOptions)
         }
+        // 用户附加 JVM 旗标（`--jvm-opts`）
+        jvmArgsArray.append(contentsOf: clientInfo.jvmArgs)
         
         // 处理游戏启动器参数
         let gameArgsArray = gameInfo.arguments.game.compactMap { (arg) -> String? in
