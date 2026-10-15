@@ -36,7 +36,7 @@ struct ServerCommand: AsyncCommand {
         @Flag(name: "yes", short: "y", help: "跳过确认(服务端默认自动接受 EULA;此旗标为命令面兼容)")
         var yes: Bool
 
-        @Flag(name: "jar-help", short: "j", help: Constants.serverJarHelp.string)
+        @Flag(name: "print-jar-help", short: "j", help: Constants.serverJarHelp.string)
         var jarHelp: Bool
 
         @Option(name: "server-args", short: "e", help: Constants.serverJarOptionHelp.string)
