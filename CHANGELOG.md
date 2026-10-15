@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/OrzMC/OrzMCKit/compare/v0.4.0...v0.5.0) (2026-10-15)
+
+
+### Features
+
+* client --extract-music / --download-threads + server --download-threads ([#24](https://github.com/OrzMC/OrzMCKit/issues/24)) ([d372bc1](https://github.com/OrzMC/OrzMCKit/commit/d372bc17c70be9134f752ec2300bdbe194defd0b))
+
 ## [0.4.0](https://github.com/OrzMC/OrzMCKit/compare/v0.3.0...v0.4.0) (2026-10-15)
 
 
