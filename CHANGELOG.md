@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/OrzMC/OrzMCKit/compare/v0.5.0...v0.6.0) (2026-10-15)
+
+
+### Features
+
+* **auth:** AuthConfig 内置 Azure 应用 client_id（公共客户端） ([#27](https://github.com/OrzMC/OrzMCKit/issues/27)) ([08d9c0e](https://github.com/OrzMC/OrzMCKit/commit/08d9c0e66affbe412fa75d1ef2d8d253dbcf9f92))
+
 ## [0.5.0](https://github.com/OrzMC/OrzMCKit/compare/v0.4.0...v0.5.0) (2026-10-15)
 
 
