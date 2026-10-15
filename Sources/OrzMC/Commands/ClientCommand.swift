@@ -60,8 +60,7 @@ struct ClientCommand: AsyncCommand {
         // 放在版本选择之前：缺 client_id 时快速失败，不触发网络/交互。
         var session: AuthSession?
         if signature.authenticate {
-            let environment = ProcessInfo.processInfo.environment
-            let clientId = (environment["ORZMC_AZURE_CLIENT_ID"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let clientId = AuthConfig.clientId()
             guard !clientId.isEmpty else {
                 throw CLIError(
                     "未配置 Azure 应用 client_id(设置 ORZMC_AZURE_CLIENT_ID);见 docs/spec/auth.md",
