@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/OrzMC/OrzMCKit/compare/v0.3.0...v0.4.0) (2026-10-15)
+
+
+### Features
+
+* server/client --refresh + server --symlink/--force-download ([#22](https://github.com/OrzMC/OrzMCKit/issues/22)) ([8f0160a](https://github.com/OrzMC/OrzMCKit/commit/8f0160a452f6ab7f63ad5c0d5574831514cbefa1))
+
 ## [0.3.0](https://github.com/OrzMC/OrzMCKit/compare/v0.2.0...v0.3.0) (2026-10-15)
 
 
