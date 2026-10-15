@@ -118,7 +118,7 @@ public struct PaperServer: Server {
         }
         let jarFileURL = dirURL.appending(path: name)
 
-        if !FileManager.default.fileExists(atPath: jarFileURL.path()) {
+        if serverInfo.forceDownload || !FileManager.default.fileExists(atPath: jarFileURL.path()) {
             let progressBar = console?.progressBar(title: "正在下载服务端文件")
             progressBar?.start()
             guard let (dataStream, total) = try await client.downloadBuild(
