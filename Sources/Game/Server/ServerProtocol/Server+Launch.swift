@@ -42,6 +42,9 @@ public extension Server {
         )
         let args = plan.jvmArgs + ["-jar", plan.jarPath] + plan.serverArgs
         if serverInfo.debug { print(args.joined(separator: " ")) }
+
+        // `--symlink`：启动前将 world 软链接到备份世界（对齐 Python `_maybe_symlink_world`）。
+        if serverInfo.symlinkWorld { prepareSymlinkWorld(workDirectory: workDirectory) }
         
         let eulaFilePath = workDirectory + "/eula.txt"
         let propertiesFilePath = workDirectory + "/server.properties"
@@ -66,5 +69,26 @@ public extension Server {
             args: args,
             workDirectory: workDirectory
         )
+    }
+
+    /// 将服务端 world 目录软链接到 `backup/worlds/<version>`（源不存在/目标已存在则跳过）。
+    private func prepareSymlinkWorld(workDirectory: String) {
+        let fileManager = FileManager.default
+        let source = "\(serverInfo.rootDir)/backup/worlds/\(serverInfo.version)"
+        let world = workDirectory + "/world"
+        guard fileManager.fileExists(atPath: source) else {
+            serverInfo.console?.warning("未找到备份世界 \(source)，跳过软链接")
+            return
+        }
+        guard !fileManager.fileExists(atPath: world) else {
+            serverInfo.console?.warning("服务端世界目录已存在，跳过软链接")
+            return
+        }
+        do {
+            try fileManager.createSymbolicLink(atPath: world, withDestinationPath: source)
+            serverInfo.console?.success("已将 world 软链接到 \(source)")
+        } catch {
+            serverInfo.console?.warning("软链接失败: \(error)")
+        }
     }
 }

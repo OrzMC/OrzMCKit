@@ -16,6 +16,10 @@ public struct ServerInfo: Sendable {
     let debug: Bool
     let forceUpgrade: Bool
     let demo: Bool
+    /// 启动前将 `world` 软链接到 `backup/worlds/<version>`（规范 `server --symlink`）。
+    var symlinkWorld: Bool
+    /// 强制重新下载服务端核心 jar（规范 `server --force-download`）。
+    var forceDownload: Bool
 
     // JVM启动内存占用参数
     var minMem: String
@@ -39,6 +43,8 @@ public struct ServerInfo: Sendable {
         debug: Bool,
         forceUpgrade: Bool,
         demo: Bool,
+        symlinkWorld: Bool = false,
+        forceDownload: Bool = false,
         minMem: String,
         maxMem: String,
         jvmArgs: [String] = [],
@@ -53,6 +59,8 @@ public struct ServerInfo: Sendable {
         self.debug = debug
         self.forceUpgrade = forceUpgrade
         self.demo = demo
+        self.symlinkWorld = symlinkWorld
+        self.forceDownload = forceDownload
         self.minMem = minMem
         self.maxMem = maxMem
         self.jvmArgs = jvmArgs

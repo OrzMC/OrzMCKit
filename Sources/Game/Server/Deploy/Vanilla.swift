@@ -69,7 +69,9 @@ public struct VanillaServer: Server {
         let serverJarFilePath = serverJarFileDirPath + "/" + serverJarFileName
         let serverJarFileURL = URL(fileURLWithPath: serverJarFilePath)
         let serverJarFileItem = DownloadItemInfo(sourceURL: serverVersionURL, dstFileURL: serverJarFileURL, hash: gameVersion.downloads.server.sha1, hashType: .sha1)
-        
+
+        // `--force-download`：删除已有核心 jar，强制重新下载。
+        if serverInfo.forceDownload { try? FileManager.default.removeItem(at: serverJarFileURL) }
         let progressBar = self.serverInfo.console?.progressBar(title: "正在下载服务端文件")
         try await Downloader.download(serverJarFileItem, progressBar: progressBar)
 

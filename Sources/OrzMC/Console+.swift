@@ -18,8 +18,12 @@ extension Console {
         output(completedHint.consoleText(.success) + display(choose).description.consoleText(.info))
         return choose
     }
-    public func chooseGameVersion(_ version: String?, interactive: Bool = TerminalEnvironment.isInteractive) async throws -> Version {
-        guard let releaseVersions = try? await Mojang.versions(type: .release), !releaseVersions.isEmpty
+    public func chooseGameVersion(
+        _ version: String?,
+        interactive: Bool = TerminalEnvironment.isInteractive,
+        refresh: Bool = false
+    ) async throws -> Version {
+        guard let releaseVersions = try? await Mojang.versions(type: .release, forceUpdate: refresh), !releaseVersions.isEmpty
         else {
             throw GameError.noGameVersions
         }

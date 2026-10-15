@@ -27,6 +27,9 @@ struct ClientCommand: AsyncCommand {
         @Option(name: "jvm-opts", help: "附加 JVM 旗标(空格分隔)")
         var jvmOpts: String?
 
+        @Flag(name: "refresh", help: "忽略元数据缓存(默认 24 小时内复用)")
+        var refresh: Bool
+
         @Option(name: "root-dir", help: "游戏根目录(默认 ~/minecraft)")
         var rootDir: String?
     }
@@ -65,7 +68,7 @@ struct ClientCommand: AsyncCommand {
             }
         }
 
-        let version = try await console.chooseGameVersion(signature.version, interactive: interactive)
+        let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh)
 
         // 非 TTY：用户名默认 guest，不阻塞（B9）。`--auth` 时不提示（认证后以档案用户名为准）。
         let username: String

@@ -48,6 +48,15 @@ struct ServerCommand: AsyncCommand {
         @Flag(name: "kill-all", short: "k", help: Constants.serverKillAllHelp.string)
         var killAll: Bool
 
+        @Flag(name: "refresh", help: "忽略元数据缓存(默认 24 小时内复用)")
+        var refresh: Bool
+
+        @Flag(name: "symlink", help: "软链接到备份世界(backup/worlds/<version>)")
+        var symlink: Bool
+
+        @Flag(name: "force-download", help: "强制重新下载服务端核心")
+        var forceDownload: Bool
+
         @Option(name: "root-dir", help: "游戏根目录(默认 ~/minecraft)")
         var rootDir: String?
     }
@@ -66,7 +75,7 @@ struct ServerCommand: AsyncCommand {
         }
 
         let interactive = !options.json && TerminalEnvironment.isInteractive
-        let version = try await console.chooseGameVersion(signature.version, interactive: interactive)
+        let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh)
 
         // `--nogui` 默认 false = 弹 GUI（对齐规范/Python）；给定时 headless。
         let gui = !signature.nogui
@@ -90,6 +99,8 @@ struct ServerCommand: AsyncCommand {
             debug: debug,
             forceUpgrade: forceUpgrade,
             demo: demo,
+            symlinkWorld: signature.symlink,
+            forceDownload: signature.forceDownload,
             minMem: minMem,
             maxMem: maxMem,
             jvmArgs: jvmArgs,
