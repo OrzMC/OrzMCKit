@@ -27,4 +27,5 @@ public enum GameType: String, Sendable, CaseIterable {
 public enum GameError: Error {
     case noGameVersions
     case worldNotFound(String)
+    case clientJarNotFound(String)
 }
