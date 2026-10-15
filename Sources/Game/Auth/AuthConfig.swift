@@ -4,7 +4,7 @@ import Foundation
 public enum AuthConfig {
     /// 内置 Azure 公共客户端 `client_id`（组织目录 + 个人账号，Allow public client flows）。
     /// 空串 = 未内置；可用环境变量 `ORZMC_AZURE_CLIENT_ID` 覆盖。
-    public static let defaultClientId = ""
+    public static let defaultClientId = "1a3e628b-c9a5-4a7f-b7b7-562e22b9787e"
 
     /// 解析顺序：显式 `override` → 环境变量 `ORZMC_AZURE_CLIENT_ID` → 内置默认。
     public static func clientId(override: String? = nil) -> String {
