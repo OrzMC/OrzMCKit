@@ -27,8 +27,14 @@ struct ServerCommand: AsyncCommand {
         @Option(name: "max-mem", short: "x", help: Constants.serverMaxMemHelp.string)
         var maxMem: String?
 
-        @Option(name: "online-mode", short: "o", help: Constants.serverOnlineModeHelp.string)
-        var onlineMode: Bool?
+        @Option(name: "jvm-opts", help: "附加 JVM 旗标(空格分隔)")
+        var jvmOpts: String?
+
+        @Flag(name: "online-mode", short: "o", help: Constants.serverOnlineModeHelp.string)
+        var onlineMode: Bool
+
+        @Flag(name: "yes", short: "y", help: "跳过确认(服务端默认自动接受 EULA;此旗标为命令面兼容)")
+        var yes: Bool
 
         @Flag(name: "jar-help", short: "j", help: Constants.serverJarHelp.string)
         var jarHelp: Bool
@@ -67,11 +73,12 @@ struct ServerCommand: AsyncCommand {
         let debug = signature.debug || options.verbose
         let minMem = signature.minMem ?? Constants.serverMinMemDefault
         let maxMem = signature.maxMem ?? Constants.serverMaxMemDefault
-        let onlineMode = signature.onlineMode ?? false
+        let onlineMode = signature.onlineMode
         let forceUpgrade = signature.forceUpgrade
         let demo = signature.demo
         let jarHelp = signature.jarHelp
         let jarOpts = signature.jarOpts
+        let jvmArgs = (signature.jvmOpts ?? "").split(separator: " ").map(String.init)
 
         let resolvedType = try Self.resolveType(signature.type)
         console.success(Constants.uiOutputServerType.string + resolvedType.rawValue)
@@ -85,6 +92,7 @@ struct ServerCommand: AsyncCommand {
             demo: demo,
             minMem: minMem,
             maxMem: maxMem,
+            jvmArgs: jvmArgs,
             onlineMode: onlineMode,
             showJarHelpInfo: jarHelp,
             jarOptions: jarOpts,

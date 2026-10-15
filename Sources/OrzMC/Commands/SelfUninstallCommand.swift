@@ -16,6 +16,9 @@ struct SelfUninstallCommand: AsyncCommand {
 
         @Flag(name: "force", help: "绕过开发环境护栏")
         var force: Bool
+
+        @Option(name: "root-dir", help: "游戏根目录(默认读取安装记录，否则 ~/minecraft)")
+        var rootDir: String?
     }
 
     var help: String = "卸载工具自身(删除二进制/PATH/补全;游戏数据默认保留)"
@@ -32,7 +35,7 @@ struct SelfUninstallCommand: AsyncCommand {
         let found = InstallManifest.find(binary: binary)
         let manifest = found?.manifest
         let targetBinary = manifest?.binary.isEmpty == false ? manifest!.binary : binary
-        let rootDir = manifest?.rootDir ?? GamePlan.defaultRoot
+        let rootDir = signature.rootDir ?? manifest?.rootDir ?? GamePlan.defaultRoot
 
         let interactive = !options.json && TerminalEnvironment.isInteractive
         if signature.removeRoot {

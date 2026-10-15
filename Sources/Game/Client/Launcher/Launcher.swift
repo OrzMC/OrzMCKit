@@ -47,8 +47,10 @@ public struct Launcher: Client {
         return try await self.launch()
     }
     
-    /// 授权验证
+    /// 授权验证：CLI `--auth` 已在命令层完成（会话已注入 `accessToken`），此时跳过；
+    /// 其余情况走 legacy `auth()`（当前禁用，恒返回 false）。
     mutating func authenticate() async throws {
+        guard clientInfo.accessToken == nil else { return }
         guard try await auth()
         else {
             return

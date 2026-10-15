@@ -24,6 +24,10 @@ public struct ClientInfo: Sendable {
     var accountPassword: String?
     var accessToken: String?
     var clientToken: String?
+
+    /// 正版授权结果（`--auth`）：档案 UUID 与登录类型；离线时 nil / `legacy`。
+    var authUUID: String?
+    var userType: String
     
     // JVM启动内存占用参数
     var minMem: String
@@ -46,6 +50,8 @@ public struct ClientInfo: Sendable {
         accountPassword: String? = nil,
         accessToken: String? = nil,
         clientToken: String? = nil,
+        authUUID: String? = nil,
+        userType: String = "legacy",
         minMem: String,
         maxMem: String,
         fabricModel: FabricModel? = nil,
@@ -61,6 +67,8 @@ public struct ClientInfo: Sendable {
         self.accountPassword = accountPassword
         self.accessToken = accessToken
         self.clientToken = clientToken
+        self.authUUID = authUUID
+        self.userType = userType
         self.minMem = minMem
         self.maxMem = maxMem
         self.fabricModel = fabricModel
