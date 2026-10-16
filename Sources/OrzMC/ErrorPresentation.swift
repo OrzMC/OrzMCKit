@@ -18,6 +18,7 @@ enum ErrorPresentation {
             case .deprecatedEndpoint(let endpoint): return "接口已废弃：\(endpoint)"
             case .cacheMiss: return "缓存未命中且无法获取"
             case .missingSHA1: return "版本元数据缺少 SHA1"
+            case .hashMismatch: return "版本元数据哈希校验失败"
             case .httpError(let status, _, let message): return "HTTP \(status)：\(message)"
             case .unknown(let message): return message
             }

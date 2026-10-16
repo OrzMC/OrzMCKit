@@ -82,7 +82,7 @@ struct ServerCommand: AsyncCommand {
         if let threads = signature.downloadThreads {
             Downloader.concurrency = min(max(threads, 1), 64)
         }
-        let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh)
+        let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh, root: options.resolveRoot(signature.rootDir))
 
         // `--nogui` 默认 false = 弹 GUI（对齐规范/Python）；给定时 headless。
         let gui = !signature.nogui

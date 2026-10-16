@@ -20,7 +20,8 @@ public enum JavaRuntime {
     }
 
     /// 该 MC 版本需要的 Java 主版本（读 version JSON 的 `javaVersion.majorVersion`，缺失默认 8）。
-    public static func javaMajor(forMCVersion version: String) async -> Int {
+    public static func javaMajor(forMCVersion version: String, root: String = GamePlan.defaultRoot) async -> Int {
+        await MojangCache.configure(root: root)
         do {
             guard let entry = try await Mojang.manifest().versions.first(where: { $0.id == version }),
                   let gameVersion = try await entry.gameVersion

@@ -56,6 +56,7 @@ public struct VanillaServer: Server {
     /// --world <String>
     /// ```
     public func start() async throws -> ManagedProcess? {
+        await MojangCache.configure(root: serverInfo.rootDir)
         
         guard let version = try await Mojang.manifest().versions.filter({ $0.id == serverInfo.version }).first,
               let gameVersion = try await version.gameVersion,

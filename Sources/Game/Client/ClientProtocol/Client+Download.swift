@@ -14,6 +14,7 @@ public extension Client {
     /// 从客户端版本清单文件中分析出要下载的资源信息
     /// - Returns: 需要下载的资源信息数组
     func generateDownloadItemInfos() async throws -> [DownloadItemInfo] {
+        await MojangCache.configure(root: clientInfo.rootDir)
         var downloadItems = [DownloadItemInfo]()
         guard
             let gameInfo = try await self.clientInfo.version.gameVersion,

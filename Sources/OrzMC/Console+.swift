@@ -21,8 +21,10 @@ extension Console {
     public func chooseGameVersion(
         _ version: String?,
         interactive: Bool = TerminalEnvironment.isInteractive,
-        refresh: Bool = false
+        refresh: Bool = false,
+        root: String = GamePlan.defaultRoot
     ) async throws -> Version {
+        await MojangCache.configure(root: root)
         guard let releaseVersions = try? await Mojang.versions(type: .release, forceUpdate: refresh), !releaseVersions.isEmpty
         else {
             throw GameError.noGameVersions

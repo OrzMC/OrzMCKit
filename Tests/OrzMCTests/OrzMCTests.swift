@@ -1,7 +1,9 @@
 import CacheKit
 import ConsoleKit
+import CryptoKit
 import Fabric
 import Foundation
+import MojangAPI
 import Testing
 
 @testable import Game
@@ -425,5 +427,45 @@ import Testing
         #expect(throws: GameError.self) {
             _ = try GamePlan.backupWorld(version: "1.20.4", type: .vanilla, root: root.path)
         }
+    }
+}
+
+/// 与 Python 共享 Mojang 元数据缓存（`ORZMC_NETWORK_SMOKE=1` 开启）。
+@Suite(.serialized) struct MojangCacheTests {
+    /// 清单 / 版本 JSON 落到 `<root>/cache`；版本 JSON 保持**原始字节**（sha1 与清单一致）——
+    /// 这是 Python `orzmc` 按 sha1 校验并复用缓存的前提。
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ORZMC_NETWORK_SMOKE"] == "1"))
+    func writesSharedCacheUnderGameRoot() async throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orzmc-cache-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        await MojangCache.configure(root: root.path)
+        let manifest = try await Mojang.manifest(forceUpdate: true)
+        let entry = try #require(manifest.versions.first { $0.id == "1.20.4" })
+        _ = try await entry.gameVersion
+
+        let fm = FileManager.default
+        let manifestPath = root.appendingPathComponent("cache/version_manifest.json").path
+        let versionPath = root.appendingPathComponent("cache/versions/1.20.4.json").path
+        #expect(fm.fileExists(atPath: manifestPath))
+        #expect(fm.fileExists(atPath: versionPath))
+
+        // 原始字节的 sha1 必须等于清单 URL 里的包哈希（Python 按此校验并复用）。
+        let expected = try #require(
+            URL(string: entry.url)?.pathComponents
+                .first { $0.count == 40 && $0.allSatisfy(\.isHexDigit) }
+        ).lowercased()
+        let data = try Data(contentsOf: URL(fileURLWithPath: versionPath))
+        let actual = Insecure.SHA1.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        #expect(actual == expected)
+
+        // 还原全局，避免影响其它测试。
+        let defaultCache = (
+            FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+                ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        ).appendingPathComponent("MojangAPI", isDirectory: true)
+        await Mojang.configureCache(directory: defaultCache)
+        await Mojang.configurePackageCache(directory: nil)
     }
 }

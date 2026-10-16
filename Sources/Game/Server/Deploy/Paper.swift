@@ -150,7 +150,7 @@ public struct PaperServer: Server {
             try jarData.write(to: jarFileURL, options: .atomic)
         }
         
-        let major = await JavaRuntime.javaMajor(forMCVersion: version)
+        let major = await JavaRuntime.javaMajor(forMCVersion: version, root: serverInfo.rootDir)
         let javaExecutable = try await JavaRuntime.ensure(root: serverInfo.rootDir, major: major)
         let process = try await launchServer(
             jarFileURL.path(),
