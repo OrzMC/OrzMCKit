@@ -43,3 +43,17 @@ jobs:
         run: |
           BIN="$(swift build -c debug --show-bin-path)/ConformanceAdapter"
           python3 parent/scripts/conformance/run.py --adapter "$BIN" --strict
+
+      - name: Build CLI
+        run: swift build -c debug --product orzmc
+
+      # 命令面单一化（规范 §8.3）：用真实 `capabilities` 与父仓库 manifest 对比，
+      # 未声明漂移即失败（两侧已 0 漂移）。
+      - name: CLI surface check (strict)
+        run: |
+          BIN="$(swift build -c debug --show-bin-path)"
+          "$BIN/orzmc" --json capabilities > "$RUNNER_TEMP/caps.json"
+          python3 parent/scripts/verify/surface.py \
+            --implementation swift \
+            --capabilities "$RUNNER_TEMP/caps.json" \
+            --strict
