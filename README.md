@@ -65,3 +65,10 @@ swift build -c debug --product ConformanceAdapter
 python3 ../OrzMC/scripts/conformance/run.py \
   --adapter "$(swift build -c debug --show-bin-path)/ConformanceAdapter" --strict
 ```
+
+---
+
+> **NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.**
+>
+> OrzMC 是独立的社区开源项目，与 Mojang / Microsoft 无隶属、赞助或背书关系，对本项目负责。
+> 联系：824219521@qq.com ｜ “Minecraft”名称、品牌与素材的一切权利归 Mojang / Microsoft 所有。
