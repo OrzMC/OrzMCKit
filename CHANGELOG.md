@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/OrzMC/OrzMCKit/compare/v0.8.0...v0.9.0) (2026-10-16)
+
+
+### Features
+
+* Mojang 元数据缓存指向游戏根目录 cache（与 Python / app 共享） ([#36](https://github.com/OrzMC/OrzMCKit/issues/36)) ([70c62b0](https://github.com/OrzMC/OrzMCKit/commit/70c62b0d2ce993eadd8f3b07c84e5ab39715b62f))
+
 ## [0.8.0](https://github.com/OrzMC/OrzMCKit/compare/v0.7.0...v0.8.0) (2026-10-16)
 
 
