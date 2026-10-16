@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   test:
+    # 只用标准 GitHub-hosted runner；勿改 `-large`/`-xlarge`（larger runner，即使 public 也计费）。
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +49,7 @@ jobs:
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
   conformance:
+    # 只用标准 GitHub-hosted runner；勿改 `-large`/`-xlarge`（larger runner，即使 public 也计费）。
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
