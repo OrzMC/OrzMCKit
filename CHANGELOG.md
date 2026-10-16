@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/OrzMC/OrzMCKit/compare/v0.7.0...v0.8.0) (2026-10-16)
+
+
+### Features
+
+* **client:** 支持 --type forge（官方安装器 + patched client jar） ([#33](https://github.com/OrzMC/OrzMCKit/issues/33)) ([b92e497](https://github.com/OrzMC/OrzMCKit/commit/b92e497fbf0dc5e9d2a39c96259d78c07c5ab686))
+
 ## [0.7.0](https://github.com/OrzMC/OrzMCKit/compare/v0.6.0...v0.7.0) (2026-10-16)
 
 
