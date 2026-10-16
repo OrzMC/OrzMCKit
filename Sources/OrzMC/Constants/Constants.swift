@@ -26,7 +26,7 @@ enum Constants: String {
     
     // Client
     case clientHelp = "客户端相关命令"
-    case clientTypeHelp = "客户端类型: vanilla/fabric（forge 待实现），默认：vanilla"
+    case clientTypeHelp = "客户端类型: vanilla/fabric/forge，默认：vanilla"
     case clientAuthHelp = "正版授权(Microsoft 设备码流程;需 ORZMC_AZURE_CLIENT_ID)"
     case clientUsernameHelp = "登录用户名"
     case clientMinMemHelp = "客户端运行使用的最小内存，默认为："

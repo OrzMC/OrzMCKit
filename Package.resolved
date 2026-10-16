@@ -1,5 +1,5 @@
 {
-  "originHash" : "e5411e10868995fcd68fd44dda4354e634694c52105999b97d21cc881dfaef5f",
+  "originHash" : "f0617356a5f42899b468557b5f4a0757b34dcf5b3eed821386144fd6fca52f1f",
   "pins" : [
     {
       "identity" : "collectionconcurrencykit",
@@ -52,7 +52,7 @@
       "location" : "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "163053f7a9f8ec895c9a129c1c016e8db37accaf"
+        "revision" : "9b69dbaea375105ddc9ba295f3e65f344eff3312"
       }
     },
     {

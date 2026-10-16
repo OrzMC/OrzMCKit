@@ -25,7 +25,12 @@ extension Client {
             GamePlan.clientDir(version: clientInfo.version.id, root: clientInfo.rootDir),
         ])
         
-        let classPath = libraryDirs.compactMap { FileManager.allFiles(in: $0, ext: jarExt) }.joined()
+        var classPath = Array(libraryDirs.compactMap { FileManager.allFiles(in: $0, ext: jarExt) }.joined())
+        // Forge 自带打过补丁的游戏 jar：排除 vanilla jar，避免未打补丁的类覆盖它。
+        if clientInfo.addon?.usesOwnClientJar == true {
+            let vanillaJar = GamePlan.clientJarPath(version: clientInfo.version.id, root: clientInfo.rootDir)
+            classPath.removeAll { $0 == vanillaJar }
+        }
         let gameDir = GamePlan.clientDir(version: clientInfo.version.id, root: clientInfo.rootDir)
         let envs = [
             "natives_directory": GamePlan.clientNativesDir(version: clientInfo.version.id, root: clientInfo.rootDir),
