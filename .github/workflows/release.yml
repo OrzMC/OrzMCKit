@@ -85,6 +85,8 @@ jobs:
             arch: x86_64
             asset: orzmc-macos-x86_64
     runs-on: ${{ matrix.runner }}
+    # 只用标准 GitHub-hosted runner（`macos-15`/`macos-15-intel`）；
+    # 勿改 `-large`/`-xlarge`（larger runner，即使 public 也计费）。
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4

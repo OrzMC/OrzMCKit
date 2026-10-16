@@ -2,30 +2,12 @@
   "originHash" : "f0617356a5f42899b468557b5f4a0757b34dcf5b3eed821386144fd6fca52f1f",
   "pins" : [
     {
-      "identity" : "collectionconcurrencykit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/JohnSundell/CollectionConcurrencyKit.git",
-      "state" : {
-        "revision" : "b4f23e24b5a1bff301efc5e70871083ca029ff95",
-        "version" : "0.2.0"
-      }
-    },
-    {
       "identity" : "console-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/console-kit.git",
       "state" : {
         "revision" : "742f624a998cba2a9e653d9b1e91ad3f3a5dff6b",
         "version" : "4.15.2"
-      }
-    },
-    {
-      "identity" : "cryptoswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
-      "state" : {
-        "revision" : "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
-        "version" : "1.10.0"
       }
     },
     {
@@ -52,16 +34,7 @@
       "location" : "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "9b69dbaea375105ddc9ba295f3e65f344eff3312"
-      }
-    },
-    {
-      "identity" : "orzswiftlint",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/OrzGeeker/OrzSwiftLint.git",
-      "state" : {
-        "revision" : "9dfa9ca7409ba447c2824fa75091c40dd9291e1a",
-        "version" : "0.0.6"
+        "revision" : "2fe29e5c8de2f767ac131a292cba8d19e67ed200"
       }
     },
     {
@@ -71,15 +44,6 @@
       "state" : {
         "branch" : "main",
         "revision" : "19ae5af4452d04d84342f83748aa873a8e2de3f0"
-      }
-    },
-    {
-      "identity" : "sourcekitten",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jpsim/SourceKitten.git",
-      "state" : {
-        "revision" : "1cde6e9fb78e64f9b9d38c4992cac4f071d7eb63",
-        "version" : "0.39.0"
       }
     },
     {
@@ -134,15 +98,6 @@
       "state" : {
         "revision" : "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
         "version" : "3.15.1"
-      }
-    },
-    {
-      "identity" : "swift-filename-matcher",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ileitch/swift-filename-matcher",
-      "state" : {
-        "revision" : "eef5ac0b6b3cdc64b3039b037bed2def8a1edaeb",
-        "version" : "2.0.1"
       }
     },
     {
@@ -209,15 +164,6 @@
       }
     },
     {
-      "identity" : "swift-syntax",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-syntax.git",
-      "state" : {
-        "revision" : "a8b1c535647243d603b6772e7e8306c993a0c188",
-        "version" : "605.0.0-prerelease-2026-06-26"
-      }
-    },
-    {
       "identity" : "swift-system",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
@@ -227,39 +173,12 @@
       }
     },
     {
-      "identity" : "swiftlint",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/realm/SwiftLint.git",
-      "state" : {
-        "revision" : "6aba03e3d8302b33f106e0f922210f35ca4b52cf",
-        "version" : "0.65.1"
-      }
-    },
-    {
       "identity" : "swiftui-webview",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kylehickinson/swiftui-webview.git",
       "state" : {
         "revision" : "8abc88c7c5c98da391a60a401110ddf59a7b961a",
         "version" : "0.3.1"
-      }
-    },
-    {
-      "identity" : "swiftytexttable",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/scottrhoyt/SwiftyTextTable.git",
-      "state" : {
-        "revision" : "c6df6cf533d120716bff38f8ff9885e1ce2a4ac3",
-        "version" : "0.9.0"
-      }
-    },
-    {
-      "identity" : "swxmlhash",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/drmohundro/SWXMLHash.git",
-      "state" : {
-        "revision" : "a853604c9e9a83ad9954c7e3d2a565273982471f",
-        "version" : "7.0.2"
       }
     },
     {
