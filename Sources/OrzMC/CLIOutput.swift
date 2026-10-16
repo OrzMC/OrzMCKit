@@ -39,7 +39,7 @@ enum JSONOutput {
 
     /// 工具版本数据（`--version` / `version`）。
     static func toolVersionData() -> [String: Any] {
-        ["tool": OrzMCVersion.current]
+        ["tool": OrzMCVersion.current, "disclaimer": Compliance.line]
     }
 }
 

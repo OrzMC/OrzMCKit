@@ -14,6 +14,7 @@ struct VersionCommand: AsyncCommand {
             JSONOutput.success(command: "version", data: JSONOutput.toolVersionData())
         } else {
             context.console.output("orzmc \(OrzMCVersion.current)")
+            context.console.output(Compliance.line.consoleText())
         }
     }
 }

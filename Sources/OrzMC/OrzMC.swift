@@ -20,6 +20,7 @@ struct OrzMC {
                 JSONOutput.success(command: "_root", data: JSONOutput.toolVersionData())
             } else {
                 print("orzmc \(OrzMCVersion.current)")
+                print(Compliance.line)
             }
             exit(0)
         }
