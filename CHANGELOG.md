@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/OrzMC/OrzMCKit/compare/v0.6.0...v0.7.0) (2026-10-16)
+
+
+### Features
+
+* **client:** 支持 --type fabric（fabric-meta 解析） ([#31](https://github.com/OrzMC/OrzMCKit/issues/31)) ([ba585ac](https://github.com/OrzMC/OrzMCKit/commit/ba585ace7876c8519a355672e0fb928dba9427f2))
+
 ## [0.6.0](https://github.com/OrzMC/OrzMCKit/compare/v0.5.0...v0.6.0) (2026-10-15)
 
 
