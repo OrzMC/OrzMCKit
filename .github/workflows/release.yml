@@ -92,8 +92,9 @@ jobs:
           ref: ${{ inputs.tag || github.ref }}
       - name: Toolchain
         run: swift --version
-      - name: Cache SwiftPM
-        uses: actions/cache@v4
+      - name: Restore SwiftPM cache
+        id: cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             .build
@@ -110,6 +111,15 @@ jobs:
           cp "$BIN/orzmc" "${{ matrix.asset }}"
           chmod +x "${{ matrix.asset }}"
           ./"${{ matrix.asset }}" version
+      - name: Save SwiftPM cache
+        # release 由 workflow_dispatch 在 main 上触发 → ref 为 main，可复用。
+        if: github.ref == 'refs/heads/main' && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - name: Assert architecture
         run: |
           set -euo pipefail
