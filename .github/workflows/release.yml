@@ -78,12 +78,13 @@ jobs:
           - runner: macos-15
             arch: arm64
             asset: orzmc-macos-arm64
+          # 交叉编译（`swift build --arch x86_64`）被 swift-openapi-generator 构建插件挡下：
+          # 插件内部按 `ARCHS` 校验、`VALID_ARCHS` 仅 arm64 → 失败（实测 air）。
+          # 故 x86_64 仍用 Intel runner；靠 SwiftPM 缓存把二次构建从 ~58min 拉低。
           - runner: macos-15-intel
             arch: x86_64
             asset: orzmc-macos-x86_64
     runs-on: ${{ matrix.runner }}
-    # Intel 跑 `swift build -c release` 编译整棵依赖（swift-syntax / SwiftLint）偶发接近 45min；
-    # 0.8.0 曾在 45:38 被超时取消（步骤实际已完成）。抬到 60min 留余量。
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -91,12 +92,22 @@ jobs:
           ref: ${{ inputs.tag || github.ref }}
       - name: Toolchain
         run: swift --version
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-release-${{ matrix.asset }}-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            spm-release-${{ matrix.asset }}-
       - name: Build (release)
         run: swift build -c release --product orzmc
       - name: Package the binary
         run: |
           set -euo pipefail
-          cp .build/release/orzmc "${{ matrix.asset }}"
+          BIN="$(swift build -c release --show-bin-path)"
+          cp "$BIN/orzmc" "${{ matrix.asset }}"
           chmod +x "${{ matrix.asset }}"
           ./"${{ matrix.asset }}" version
       - name: Assert architecture
