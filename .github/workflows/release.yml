@@ -82,7 +82,9 @@ jobs:
             arch: x86_64
             asset: orzmc-macos-x86_64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    # Intel 跑 `swift build -c release` 编译整棵依赖（swift-syntax / SwiftLint）偶发接近 45min；
+    # 0.8.0 曾在 45:38 被超时取消（步骤实际已完成）。抬到 60min 留余量。
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
