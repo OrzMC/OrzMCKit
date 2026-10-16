@@ -34,7 +34,16 @@
       "location" : "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "2fe29e5c8de2f767ac131a292cba8d19e67ed200"
+        "revision" : "d71cc57dedd4fc3436b319648ecd79f94a0ba636"
+      }
+    },
+    {
+      "identity" : "orzswiftlint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/OrzGeeker/OrzSwiftLint.git",
+      "state" : {
+        "revision" : "7865ba8ee934f504467cf4b5b27928860ca838f6",
+        "version" : "0.0.8"
       }
     },
     {
