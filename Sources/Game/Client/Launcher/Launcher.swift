@@ -31,8 +31,10 @@ public struct Launcher: Client {
     /// 启动并前台等待退出，返回归一化退出码（CLI 用）。
     mutating public func run() async throws -> Int {
         
-        // 选择启动的方式
-        try self.chooseProfile()
+        // 选择启动的方式（仅 vanilla 走 launcher_profiles 机制；fabric 由 fabric-meta 解析）
+        if clientInfo.type == .vanilla {
+            try self.chooseProfile()
+        }
         
         // 正版验证
         try await self.authenticate()
@@ -79,9 +81,9 @@ public struct Launcher: Client {
         try await downloadClient()
     }
     
-    /// 下载Fabric客户端相关文件
+    /// 下载Fabric客户端相关文件（库落到客户端 `libraries/`）
     mutating func downloadFabric() async throws {
-        guard let downloadItemInfos = try fabricDownloadItems() else {
+        guard let downloadItemInfos = fabricDownloadItems() else {
             return
         }
         let progressBar = self.clientInfo.console?.progressBar(title: "开始下载Fabric库文件")

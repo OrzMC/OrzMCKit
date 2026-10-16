@@ -23,30 +23,29 @@ public struct FabricModel: Codable, Sendable {
     public struct Library: Codable, Sendable {
         public let name: String
         public let url: URL
-        
-        
-        public var downloadURL: URL {
-            var url = self.url
-            let components = self.name.split(separator: ":")
-            
-            if let firstPart = components.first?.split(separator: ".") {
-                let secondPart = components.dropFirst()
-                
-                
-                firstPart.forEach { pathComponent in
-                    url.appendPathComponent(String(pathComponent))
-                }
-                
-                secondPart.forEach { pathComponent in
-                    url.appendPathComponent(String(pathComponent))
-                }
-                
-                let filename = secondPart.joined(separator: "-")
-                url.appendPathComponent(filename)
-                url.appendPathExtension("jar")
+        /// fabric-meta 对部分库（如 intermediary / fabric-loader）不提供 sha1/size，故可选。
+        public let sha1: String?
+        public let size: Int?
+
+        /// Maven 相对路径：`group/path/artifact/version/artifact-version[-classifier].jar`。
+        /// fabric-meta 的 `url` 现仅为仓库根（如 `https://maven.fabricmc.net/`），
+        /// 真实落地路径必须由坐标本身推导。
+        public var path: String {
+            let parts = name.split(separator: ":").map(String.init)
+            guard parts.count >= 3 else {
+                return name.replacingOccurrences(of: ":", with: "/") + ".jar"
             }
-        
-            return url
+            let group = parts[0]
+            let artifact = parts[1]
+            let version = parts[2]
+            let classifier = parts.count >= 4 ? "-\(parts[3])" : ""
+            let directory = group.replacingOccurrences(of: ".", with: "/")
+            return "\(directory)/\(artifact)/\(version)/\(artifact)-\(version)\(classifier).jar"
+        }
+
+        public var downloadURL: URL {
+            let base = url.absoluteString.hasSuffix("/") ? url.absoluteString : url.absoluteString + "/"
+            return URL(string: base + path) ?? url
         }
     }
 }

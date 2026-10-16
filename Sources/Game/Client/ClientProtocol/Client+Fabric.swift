@@ -1,46 +1,43 @@
-//
-//  File.swift
-//  
-//
-//  Created by joker on 2022/10/22.
-//
-
 import Foundation
-import Fabric
 import JokerKits
 
+// MARK: 客户端 Fabric 附加组件
+//
+// 解析结果由 `FabricMeta.resolve(version:root:refresh:)` 产出并存入 `ClientInfo.addon`，
+// 库下载到客户端 `libraries/`（与 vanilla 库同目录，classpath 扫描自然包含）。
 extension Client {
-    mutating func fabricClientVersionProfileLibrariesDir() throws -> String? {
-        guard let launcherProfile = self.clientInfo.launcherProfile, launcherProfile.selectedProfile.contains("fabric"), let lastVersionId = launcherProfile.profiles[launcherProfile.selectedProfile]?.lastVersionId else {
-            return nil
-        }
-        let fabricLaunchProfileDir = GamePlan.clientProfileDir(version: self.clientInfo.version.id, profile: lastVersionId, root: self.clientInfo.rootDir)
-        let fabricLaunchProfilePath = fabricLaunchProfileDir + "/\(lastVersionId).json"
-        let fabricLaunchProfileURL = URL(fileURLWithPath: fabricLaunchProfilePath)
-        self.clientInfo.fabricModel = try Fabric.launcherConfig(fabricLaunchProfileURL)
-        
-        return GamePlan.clientProfileLibrariesDir(version: self.clientInfo.version.id, profile: lastVersionId, root: self.clientInfo.rootDir)
-    }
+    /// Fabric 附加 JVM 参数（loader profile 的 `arguments.jvm`）。
     func fabricClientJVMOptions() -> [String]? {
-        return self.clientInfo.fabricModel?.arguments.jvm
+        guard let addon = clientInfo.addon, !addon.jvmArgs.isEmpty else { return nil }
+        return addon.jvmArgs
     }
+
+    /// Fabric 主类（覆盖 vanilla 主类）。
     func fabricClientMainClass() -> String? {
-        return self.clientInfo.fabricModel?.mainClass
+        clientInfo.addon?.mainClass
     }
-    public mutating func fabricDownloadItems() throws -> [DownloadItemInfo]? {
-        guard let dstDir = try self.fabricClientVersionProfileLibrariesDir() else {
-            return nil
-        }
-        guard let libraries = self.clientInfo.fabricModel?.libraries else {
-            return nil
-        }
-        let downloadItemInfos = libraries.map { lib -> DownloadItemInfo in
-            let fileName = lib.downloadURL.lastPathComponent
-            let dstFilePath = dstDir + "/" + fileName
-            let dstFileURL = URL(fileURLWithPath: dstFilePath)
-            return DownloadItemInfo(sourceURL: lib.downloadURL, dstFileURL: dstFileURL)
-        }
-        return downloadItemInfos
+
+    /// Fabric 附加游戏参数（loader profile 的 `arguments.game`）。
+    func fabricClientGameArgs() -> [String] {
+        clientInfo.addon?.gameArgs ?? []
     }
-    
+
+    /// Fabric 库下载项；无附加组件时返回 nil。
+    public func fabricDownloadItems() -> [DownloadItemInfo]? {
+        guard let addon = clientInfo.addon, !addon.libraries.isEmpty else { return nil }
+        let items = GamePlan.planProfileAddonDownload(
+            addon: addon,
+            root: clientInfo.rootDir,
+            version: clientInfo.version.id
+        ).compactMap { item -> DownloadItemInfo? in
+            guard let url = URL(string: item.url) else { return nil }
+            return DownloadItemInfo(
+                sourceURL: url,
+                dstFileURL: URL(fileURLWithPath: item.path),
+                hash: item.sha1,
+                hashType: item.sha1 == nil ? nil : .sha1
+            )
+        }
+        return items.isEmpty ? nil : items
+    }
 }

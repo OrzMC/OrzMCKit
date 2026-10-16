@@ -20,14 +20,10 @@ extension Client {
         let jarExt = "jar"
         let cpSep = Platform.os == .windows ? ";" : ":"
         
-        var libraryDirs = Array([
+        let libraryDirs = Array([
             GamePlan.clientLibrariesDir(version: clientInfo.version.id, root: clientInfo.rootDir),
             GamePlan.clientDir(version: clientInfo.version.id, root: clientInfo.rootDir),
         ])
-        // Fabric 客户端启动时附带的额外库
-        if let fabricLibrariesDir = try self.fabricClientVersionProfileLibrariesDir() {
-            libraryDirs.append(fabricLibrariesDir)
-        }
         
         let classPath = libraryDirs.compactMap { FileManager.allFiles(in: $0, ext: jarExt) }.joined()
         let gameDir = GamePlan.clientDir(version: clientInfo.version.id, root: clientInfo.rootDir)
@@ -99,6 +95,8 @@ extension Client {
                 return nil
             }
         }
+        // Fabric loader profile 的附加游戏参数（通常在末位追加）
+        let extraGameArgs = self.fabricClientGameArgs()
         
         var mainClass = gameInfo.mainClass
         if let fabricMainClass = self.fabricClientMainClass() {
@@ -112,7 +110,8 @@ extension Client {
             javaArgsArray,
             jvmArgsArray,
             [mainClass],
-            gameArgsArray
+            gameArgsArray,
+            extraGameArgs
         ].joined()).forEach { arg in
             
             let matches = regex.matches(in: arg, range: NSRange(location: 0, length: arg.count))

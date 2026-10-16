@@ -25,7 +25,7 @@ let package = Package(
         ),
         .testTarget(
             name: "OrzMCTests",
-            dependencies: ["OrzMC", "Game"]
+            dependencies: ["OrzMC", "Game", "Fabric"]
         ),
         // MARK: Conformance adapter (drives parent docs/spec fixtures)
         .executableTarget(
@@ -43,6 +43,7 @@ let package = Package(
             "Fabric",
             .product(name: "DownloadAPI", package: "PaperMC"),
             .product(name: "HangarAPI", package: "PaperMC"),
+            .product(name: "CacheKit", package: "OrzSwiftKit"),
             .product(name: "Utils", package: "OrzSwiftKit"),
             .product(name: "RuntimeKit", package: "OrzSwiftKit"),
         ]),

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Fabric
 import MojangAPI
 import ConsoleKit
 
@@ -15,6 +14,8 @@ public struct ClientInfo: Sendable {
     public var username: String
     /// 游戏根目录（规范 §3 全局 `--root-dir`；默认 `~/minecraft`）。
     public var rootDir: String
+    /// 客户端类型（`vanilla` / `fabric`；`forge` 待实现）。
+    public var type: GameType
     var debug: Bool
     var authenticate: Bool
     var launcherProfile: LauncherProfile?
@@ -35,8 +36,8 @@ public struct ClientInfo: Sendable {
     /// 用户附加 JVM 旗标（`--jvm-opts`，空格分隔已拆分为数组）。
     var jvmArgs: [String]
     
-    // Fabric
-    var fabricModel: FabricModel?
+    /// 可选客户端附加组件（Fabric 等）：额外库 / 启动参数 / 主类覆盖。
+    var addon: ProfileAddon?
     
     // Console
     let console: (any Console)?
@@ -45,6 +46,7 @@ public struct ClientInfo: Sendable {
         version: Version,
         username: String,
         rootDir: String = GamePlan.defaultRoot,
+        type: GameType = .vanilla,
         debug: Bool = false,
         authenticate: Bool = false,
         launcherProfile: LauncherProfile? = nil,
@@ -57,12 +59,13 @@ public struct ClientInfo: Sendable {
         minMem: String,
         maxMem: String,
         jvmArgs: [String] = [],
-        fabricModel: FabricModel? = nil,
+        addon: ProfileAddon? = nil,
         console: (any Console)? = nil
     ) {
         self.version = version
         self.username = username
         self.rootDir = rootDir
+        self.type = type
         self.debug = debug
         self.authenticate = authenticate
         self.launcherProfile = launcherProfile
@@ -75,7 +78,7 @@ public struct ClientInfo: Sendable {
         self.minMem = minMem
         self.maxMem = maxMem
         self.jvmArgs = jvmArgs
-        self.fabricModel = fabricModel
+        self.addon = addon
         self.console = console
     }
 }
