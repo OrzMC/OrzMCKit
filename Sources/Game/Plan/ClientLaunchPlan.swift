@@ -293,6 +293,24 @@ public extension GamePlan {
         }
         return items
     }
+
+    /// 纯函数：可选附加组件（Fabric 等）库的下载清单，落地客户端 `libraries/`。
+    static func planProfileAddonDownload(
+        addon: ProfileAddon,
+        root: String,
+        version: String
+    ) -> [DownloadPlanItem] {
+        let layout = layout(root: root, version: version)
+        return addon.libraries.compactMap { library in
+            guard !library.url.isEmpty else { return nil }
+            return DownloadPlanItem(
+                url: library.url,
+                path: "\(layout.clientLibrariesDir)/\(library.path)",
+                sha1: library.sha1,
+                size: library.size
+            )
+        }
+    }
 }
 
 /// 选择库的下载项：legacy（``natives``）按平台取 classifier；无 ``downloads`` 时回退 Maven 路径。

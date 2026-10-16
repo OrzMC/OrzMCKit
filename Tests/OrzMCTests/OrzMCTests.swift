@@ -1,4 +1,5 @@
 import ConsoleKit
+import Fabric
 import Foundation
 import Testing
 
@@ -149,6 +150,66 @@ import Testing
         #expect(GameType.paper.serverJarName(version: "1.20.4") == "paper-1.20.4.jar")
         #expect(GameType.forge.serverJarName(version: "1.20.4") == "forge-1.20.4.jar")
         #expect(GameType.fabric.serverJarName(version: "1.20.4") == "fabric-server-launch.jar")
+    }
+}
+
+/// Fabric 附加组件：fabric-meta profile → `ProfileAddon` 映射（离线、确定性）。
+@Suite struct FabricMetaTests {
+    private let profile = """
+    {
+      "id": "fabric-loader-0.15.11-1.20.4",
+      "inheritsFrom": "1.20.4",
+      "releaseTime": "2026-10-15T04:57:17+0000",
+      "time": "2026-10-15T04:57:17+0000",
+      "type": "release",
+      "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",
+      "arguments": { "game": [], "jvm": ["-DFabricMcEmu= net.minecraft.client.main.Main "] },
+      "libraries": [
+        { "name": "org.ow2.asm:asm:9.6", "url": "https://maven.fabricmc.net/", "sha1": "aa20", "size": 123598 },
+        { "name": "net.fabricmc:intermediary:1.20.4", "url": "https://maven.fabricmc.net/" }
+      ]
+    }
+    """
+
+    @Test func mapsToProfileAddon() throws {
+        let model = try Fabric.launcherConfig(Data(profile.utf8))
+        let addon = model.profileAddon
+        #expect(addon.mainClass == "net.fabricmc.loader.impl.launch.knot.KnotClient")
+        #expect(addon.jvmArgs == ["-DFabricMcEmu= net.minecraft.client.main.Main "])
+        #expect(addon.gameArgs.isEmpty)
+        #expect(addon.libraries.count == 2)
+        #expect(addon.libraries[0].path == "org/ow2/asm/asm/9.6/asm-9.6.jar")
+        #expect(addon.libraries[0].url == "https://maven.fabricmc.net/org/ow2/asm/asm/9.6/asm-9.6.jar")
+        #expect(addon.libraries[0].sha1 == "aa20")
+        // 无 sha1 的库也能映射（下载时跳过校验）。
+        #expect(addon.libraries[1].path == "net/fabricmc/intermediary/1.20.4/intermediary-1.20.4.jar")
+        #expect(addon.libraries[1].sha1 == nil)
+    }
+
+    @Test func planProfileAddonDownload() throws {
+        let model = try Fabric.launcherConfig(Data(profile.utf8))
+        let items = GamePlan.planProfileAddonDownload(
+            addon: model.profileAddon,
+            root: "/tmp/orzmc",
+            version: "1.20.4"
+        )
+        #expect(items.count == 2)
+        #expect(
+            items[0].path
+                == "/tmp/orzmc/versions/1.20.4/client/libraries/org/ow2/asm/asm/9.6/asm-9.6.jar"
+        )
+    }
+
+    /// 真实 fabric-meta 解析（默认跳过；`ORZMC_NETWORK_SMOKE=1` 开启）。
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ORZMC_NETWORK_SMOKE"] == "1"))
+    func resolvesLiveFabricMeta() async throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orzmc-fabric-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let addon = try await FabricMeta.resolve(version: "1.20.4", root: root.path)
+        #expect(addon.mainClass == "net.fabricmc.loader.impl.launch.knot.KnotClient")
+        #expect(addon.libraries.contains { $0.name.contains("fabric-loader") })
+        #expect(addon.libraries.allSatisfy { !$0.path.isEmpty && !$0.url.isEmpty })
     }
 }
 

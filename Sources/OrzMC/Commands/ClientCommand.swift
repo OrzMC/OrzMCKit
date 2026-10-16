@@ -16,6 +16,9 @@ struct ClientCommand: AsyncCommand {
         @Option(name: "version", short: "v", help: Constants.VersionHelp.string)
         var version: String?
 
+        @Option(name: "type", short: "t", help: Constants.clientTypeHelp.string)
+        var type: String?
+
         @Option(name: "username", short: "u", help: Constants.clientUsernameHelp.string)
         var username: String?
 
@@ -56,6 +59,8 @@ struct ClientCommand: AsyncCommand {
 
         let debug = signature.debug || options.verbose
 
+        let resolvedType = try Self.resolveType(signature.type)
+
         // 正版授权（Microsoft 设备码流程）：结果贯穿 ClientInfo（用户名/令牌/uuid/user_type）。
         // 放在版本选择之前：缺 client_id 时快速失败，不触发网络/交互。
         var session: AuthSession?
@@ -80,6 +85,20 @@ struct ClientCommand: AsyncCommand {
 
         let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh)
 
+        // Fabric：经 fabric-meta 解析 loader profile（提取音乐不需要附加组件）。
+        var addon: ProfileAddon?
+        if resolvedType == .fabric, !signature.extractMusic {
+            do {
+                addon = try await FabricMeta.resolve(
+                    version: version.id,
+                    root: options.resolveRoot(signature.rootDir),
+                    refresh: signature.refresh
+                )
+            } catch {
+                throw CLIError("\(error)", code: "E_NETWORK")
+            }
+        }
+
         // 非 TTY：用户名默认 guest，不阻塞（B9）。`--auth` 时不提示（认证后以档案用户名为准）。
         let username: String
         if signature.authenticate {
@@ -103,6 +122,7 @@ struct ClientCommand: AsyncCommand {
             version: version,
             username: resolvedUsername,
             rootDir: options.resolveRoot(signature.rootDir),
+            type: resolvedType,
             debug: debug,
             authenticate: false,
             accessToken: session?.accessToken,
@@ -111,6 +131,7 @@ struct ClientCommand: AsyncCommand {
             minMem: minMem,
             maxMem: maxMem,
             jvmArgs: jvmArgs,
+            addon: addon,
             console: console
         )
         // 提取音乐：只确保客户端 jar，解压 .ogg 后退出（不启动）。
@@ -119,7 +140,7 @@ struct ClientCommand: AsyncCommand {
             if options.json {
                 JSONOutput.success(
                     command: "client",
-                    data: ["version": version.id, "mode": "extract-music", "count": count]
+                    data: ["version": version.id, "type": resolvedType.rawValue, "mode": "extract-music", "count": count]
                 )
             }
             return
@@ -129,7 +150,7 @@ struct ClientCommand: AsyncCommand {
         let code = try await laucher.run()
 
         if options.json {
-            var data: [String: Any] = ["version": version.id, "username": resolvedUsername, "exitCode": code]
+            var data: [String: Any] = ["version": version.id, "username": resolvedUsername, "type": resolvedType.rawValue, "exitCode": code]
             if let session {
                 data["authenticated"] = true
                 data["uuid"] = session.uuid
@@ -138,5 +159,19 @@ struct ClientCommand: AsyncCommand {
             }
             JSONOutput.success(command: "client", data: data)
         }
+    }
+
+    /// 客户端类型：缺省 `vanilla`；`paper` 无客户端，`forge` 尚未在引擎落地（显式报错）。
+    private static func resolveType(_ raw: String?) throws -> GameType {
+        guard let type = GameType(rawValue: raw ?? GameType.vanilla.rawValue) else {
+            throw CLIError("未知的客户端类型: \(raw ?? "")", code: "E_USAGE")
+        }
+        guard type.isClientCapable else {
+            throw CLIError("类型 \(type.rawValue) 不能用于客户端", code: "E_UNSUPPORTED_TYPE")
+        }
+        guard type != .forge else {
+            throw CLIError("暂未支持的客户端类型: forge", code: "E_UNSUPPORTED_TYPE")
+        }
+        return type
     }
 }
