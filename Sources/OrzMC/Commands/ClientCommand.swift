@@ -85,15 +85,28 @@ struct ClientCommand: AsyncCommand {
 
         let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh)
 
-        // Fabric：经 fabric-meta 解析 loader profile（提取音乐不需要附加组件）。
+        // 客户端附加组件（Fabric / Forge）：经对应元数据源解析（提取音乐不需要）。
         var addon: ProfileAddon?
-        if resolvedType == .fabric, !signature.extractMusic {
+        if !signature.extractMusic, resolvedType == .fabric || resolvedType == .forge {
             do {
-                addon = try await FabricMeta.resolve(
-                    version: version.id,
-                    root: options.resolveRoot(signature.rootDir),
-                    refresh: signature.refresh
-                )
+                switch resolvedType {
+                case .fabric:
+                    addon = try await FabricMeta.resolve(
+                        version: version.id,
+                        root: options.resolveRoot(signature.rootDir),
+                        refresh: signature.refresh
+                    )
+                case .forge:
+                    addon = try await ForgeMeta.resolve(
+                        version: version.id,
+                        root: options.resolveRoot(signature.rootDir),
+                        refresh: signature.refresh
+                    )
+                default:
+                    break
+                }
+            } catch let error as ForgeMetaError {
+                throw CLIError(error.description, code: error.code)
             } catch {
                 throw CLIError("\(error)", code: "E_NETWORK")
             }
@@ -161,16 +174,13 @@ struct ClientCommand: AsyncCommand {
         }
     }
 
-    /// 客户端类型：缺省 `vanilla`；`paper` 无客户端，`forge` 尚未在引擎落地（显式报错）。
+    /// 客户端类型：缺省 `vanilla`；`paper` 无客户端（`vanilla/fabric/forge` 均为客户端类型）。
     private static func resolveType(_ raw: String?) throws -> GameType {
         guard let type = GameType(rawValue: raw ?? GameType.vanilla.rawValue) else {
             throw CLIError("未知的客户端类型: \(raw ?? "")", code: "E_USAGE")
         }
         guard type.isClientCapable else {
             throw CLIError("类型 \(type.rawValue) 不能用于客户端", code: "E_UNSUPPORTED_TYPE")
-        }
-        guard type != .forge else {
-            throw CLIError("暂未支持的客户端类型: forge", code: "E_UNSUPPORTED_TYPE")
         }
         return type
     }

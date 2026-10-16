@@ -1,3 +1,4 @@
+import CacheKit
 import ConsoleKit
 import Fabric
 import Foundation
@@ -210,6 +211,51 @@ import Testing
         #expect(addon.mainClass == "net.fabricmc.loader.impl.launch.knot.KnotClient")
         #expect(addon.libraries.contains { $0.name.contains("fabric-loader") })
         #expect(addon.libraries.allSatisfy { !$0.path.isEmpty && !$0.url.isEmpty })
+    }
+}
+
+/// Forge 附加组件：promotions 解析与参数提取（离线、确定性）。
+@Suite struct ForgeMetaTests {
+    @Test func resolvesLatestFromPromotions() async throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orzmc-forge-cache-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let cache = MetadataCache(directory: dir)
+        try cache.write(
+            ["promos": ["1.20.4-latest": "49.2.8", "1.20.4-recommended": "49.2.0"]],
+            to: cache.metaURL("forge-promotions")
+        )
+        let full = try await ForgeMeta.latestFullVersion(mcVersion: "1.20.4", cache: cache)
+        #expect(full == "1.20.4-49.2.8")
+    }
+
+    @Test func extractsPlainArguments() {
+        let entries: [ArgumentEntry] = [
+            .plain("--launchTarget"),
+            .plain("forge_client"),
+            .conditional(rules: [], value: ["ignored"]),
+        ]
+        #expect(ForgeMeta.plainStrings(entries) == ["--launchTarget", "forge_client"])
+    }
+
+    @Test func installerURLShape() {
+        #expect(
+            "\(ForgeMeta.mavenBase)/1.20.4-49.2.8/forge-1.20.4-49.2.8-installer.jar"
+                == "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.8/forge-1.20.4-49.2.8-installer.jar"
+        )
+    }
+
+    /// 真实 Forge 解析（下载安装器 + 托管 JRE17 + 运行 --installClient，较慢，默认跳过）。
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ORZMC_NETWORK_SMOKE"] == "1"))
+    func resolvesLiveForge() async throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orzmc-forge-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let addon = try await ForgeMeta.resolve(version: "1.20.4", root: root.path)
+        #expect(addon.usesOwnClientJar)
+        #expect(addon.mainClass?.contains("ForgeBootstrap") == true)
+        #expect(addon.libraries.contains { $0.path.hasSuffix("-client.jar") })
+        #expect(addon.gameArgs.contains("--launchTarget"))
     }
 }
 
