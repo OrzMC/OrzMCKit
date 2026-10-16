@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/OrzMC/OrzMCKit/compare/v0.9.0...v0.9.1) (2026-10-16)
+
+
+### Performance Improvements
+
+* 跟进 OrzSwiftKit 去掉编译期 SwiftLint（Package.resolved）+ runner 护栏注释 ([#40](https://github.com/OrzMC/OrzMCKit/issues/40)) ([f8e4f26](https://github.com/OrzMC/OrzMCKit/commit/f8e4f2607f5f200412a11a9bdb1b45286c90c79a))
+* 跟进 OrzSwiftKit 预编译 SwiftLint（插件回归，本地/CI 自动 lint；Package.resolved） ([#42](https://github.com/OrzMC/OrzMCKit/issues/42)) ([f983847](https://github.com/OrzMC/OrzMCKit/commit/f98384799ae2db3e3ef1f5b3a2ad52a3c9350940))
+
 ## [0.9.0](https://github.com/OrzMC/OrzMCKit/compare/v0.8.0...v0.9.0) (2026-10-16)
 
 
