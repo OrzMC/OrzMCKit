@@ -120,7 +120,7 @@ public enum ForgeMeta {
             try minimalLauncherProfile.write(toFile: profilePath, atomically: true, encoding: .utf8)
         }
 
-        let mcMajor = await JavaRuntime.javaMajor(forMCVersion: mcVersion)
+        let mcMajor = await JavaRuntime.javaMajor(forMCVersion: mcVersion, root: root)
         let java = try await JavaRuntime.ensure(root: root, major: max(mcMajor, minimumJavaMajor))
         let process = try ProcessRunner.run(
             executable: java,

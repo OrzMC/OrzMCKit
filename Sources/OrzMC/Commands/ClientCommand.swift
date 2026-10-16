@@ -83,7 +83,7 @@ struct ClientCommand: AsyncCommand {
             }
         }
 
-        let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh)
+        let version = try await console.chooseGameVersion(signature.version, interactive: interactive, refresh: signature.refresh, root: options.resolveRoot(signature.rootDir))
 
         // 客户端附加组件（Fabric / Forge）：经对应元数据源解析（提取音乐不需要）。
         var addon: ProfileAddon?

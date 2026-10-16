@@ -12,6 +12,7 @@ import MojangAPI
 
 extension Client {
     public mutating func parseBootArgs() async throws -> [String]? {
+        await MojangCache.configure(root: clientInfo.rootDir)
         guard let gameInfo = try await self.clientInfo.version.gameVersion
         else {
             return nil

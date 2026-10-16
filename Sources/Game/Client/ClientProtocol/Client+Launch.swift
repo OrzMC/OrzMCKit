@@ -9,7 +9,7 @@ public extension Client {
     mutating func launchClient() async throws -> ManagedProcess? {
         guard let args = try await parseBootArgs() else { return nil }
         let version = clientInfo.version.id
-        let major = await JavaRuntime.javaMajor(forMCVersion: version)
+        let major = await JavaRuntime.javaMajor(forMCVersion: version, root: clientInfo.rootDir)
         let javaExecutable = try await JavaRuntime.ensure(root: clientInfo.rootDir, major: major)
         let gameDir = GamePlan.clientDir(version: version, root: clientInfo.rootDir)
         return try ProcessRunner.run(
