@@ -8,5 +8,5 @@ import Foundation
 /// `x-release-please-version` 标记供 release-please 的 generic updater 改写；
 /// 发版流程另有护栏：GitHub tag 必须与本常量一致（见 `.github/workflows/release.yml`）。
 public enum OrzMCVersion {
-    public static let current = "0.10.0"  // x-release-please-version
+    public static let current = "0.11.0"  // x-release-please-version
 }
