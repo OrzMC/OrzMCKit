@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.0](https://github.com/OrzMC/OrzMCKit/compare/v0.12.0...v0.13.0) (2026-10-17)
+
+
+### Features
+
+* **cli:** 对齐 CLI 契约 0.2（非交互取消 / 补全 hint 与 E_USAGE / CLI 验收） ([#56](https://github.com/OrzMC/OrzMCKit/issues/56)) ([e96de48](https://github.com/OrzMC/OrzMCKit/commit/e96de486ff0bbb5a4b2bd5a7c10bcb15925621ac))
+* **install:** InstallManifest 下沉到 Game（公开）+ 安装器写 surface ([#54](https://github.com/OrzMC/OrzMCKit/issues/54)) ([329230f](https://github.com/OrzMC/OrzMCKit/commit/329230f03f4327aa453fb530d52597ba15b71d1e))
+
 ## [0.12.0](https://github.com/OrzMC/OrzMCKit/compare/v0.11.1...v0.12.0) (2026-10-17)
 
 
