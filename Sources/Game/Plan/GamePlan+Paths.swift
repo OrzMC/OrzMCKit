@@ -74,6 +74,10 @@ public extension GamePlan {
         serverDir(version: version, type: type, root: root) + "/plugins"
     }
 
+    static func serverBuildDir(version: String, type: GameType, root: String = defaultRoot) -> String {
+        layout(root: root, version: version, type: type).serverBuildDir
+    }
+
     static func serverPluginUpdateDir(version: String, type: GameType, root: String = defaultRoot) -> String {
         serverPluginDir(version: version, type: type, root: root) + "/update"
     }

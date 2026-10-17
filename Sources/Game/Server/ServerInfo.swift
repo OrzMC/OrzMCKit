@@ -20,6 +20,8 @@ public struct ServerInfo: Sendable {
     var symlinkWorld: Bool
     /// 强制重新下载服务端核心 jar（规范 `server --force-download`）。
     var forceDownload: Bool
+    /// 忽略元数据缓存（规范 `server --refresh`；Fabric/Forge 解析安装器与 loader 时生效）。
+    var refresh: Bool
 
     // JVM启动内存占用参数
     var minMem: String
@@ -45,6 +47,7 @@ public struct ServerInfo: Sendable {
         demo: Bool,
         symlinkWorld: Bool = false,
         forceDownload: Bool = false,
+        refresh: Bool = false,
         minMem: String,
         maxMem: String,
         jvmArgs: [String] = [],
@@ -61,6 +64,7 @@ public struct ServerInfo: Sendable {
         self.demo = demo
         self.symlinkWorld = symlinkWorld
         self.forceDownload = forceDownload
+        self.refresh = refresh
         self.minMem = minMem
         self.maxMem = maxMem
         self.jvmArgs = jvmArgs

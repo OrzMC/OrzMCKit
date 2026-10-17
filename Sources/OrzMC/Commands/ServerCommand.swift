@@ -108,6 +108,7 @@ struct ServerCommand: AsyncCommand {
             demo: demo,
             symlinkWorld: signature.symlink,
             forceDownload: signature.forceDownload,
+            refresh: signature.refresh,
             minMem: minMem,
             maxMem: maxMem,
             jvmArgs: jvmArgs,
@@ -123,9 +124,10 @@ struct ServerCommand: AsyncCommand {
             code = try await runForeground(PaperServer(serverInfo: serverInfo), console: console)
         case .vanilla:
             code = try await runForeground(VanillaServer(serverInfo: serverInfo), console: console)
-        case .fabric, .forge:
-            // 显式不支持，不静默（对齐 docs/spec/behavior.md：不支持的类型须明确提示）。
-            throw CLIError("暂未支持的服务端类型: \(resolvedType.rawValue)", code: "E_UNSUPPORTED")
+        case .fabric:
+            code = try await runForeground(FabricServer(serverInfo: serverInfo), console: console)
+        case .forge:
+            code = try await runForeground(ForgeServer(serverInfo: serverInfo), console: console)
         }
 
         if options.json {

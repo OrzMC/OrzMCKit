@@ -56,6 +56,27 @@ public enum FabricMeta {
         return first.loader.version
     }
 
+    /// 最新稳定的 fabric-installer 版本（对齐 Python `Fabric.latest_installer_version`）。
+    static func latestInstallerVersion(cache: MetadataCache) async throws -> String {
+        struct Entry: Codable {
+            let version: String
+            let stable: Bool?
+        }
+
+        let url = cache.metaURL("fabric-installer")
+        let entries: [Entry] = try await cache.get(at: url) {
+            let data = try await get("\(base)/versions/installer")
+            return try JSONDecoder().decode([Entry].self, from: data)
+        }
+        if let stable = entries.first(where: { $0.stable == true }) {
+            return stable.version
+        }
+        guard let first = entries.first else {
+            throw FabricMetaError.noInstaller
+        }
+        return first.version
+    }
+
     /// 拉取 URL 字节（非 2xx 视为错误，交由 `MetadataCache` 回退）。
     static func get(_ urlString: String) async throws -> Data {
         guard let url = URL(string: urlString) else {
@@ -73,12 +94,14 @@ public enum FabricMetaError: Error, CustomStringConvertible {
     case badURL(String)
     case http(status: Int, url: String)
     case noLoader(String)
+    case noInstaller
 
     public var description: String {
         switch self {
         case .badURL(let url): return "Fabric 元数据 URL 无效: \(url)"
         case .http(let status, let url): return "Fabric 元数据请求失败（HTTP \(status)）: \(url)"
         case .noLoader(let version): return "Fabric 不支持 Minecraft \(version)"
+        case .noInstaller: return "Fabric 安装器版本列表为空"
         }
     }
 }
