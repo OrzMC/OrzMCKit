@@ -104,6 +104,7 @@ enum MCPServer {
         let isFlag: Bool
         let required: Bool
         let schemaType: String
+        let enumValues: [String]?
     }
 
     private static func parameters(_ spec: CommandCapability) -> [MCPParameter] {
@@ -116,7 +117,8 @@ enum MCPServer {
                 help: value.help,
                 isFlag: value.flag,
                 required: value.required,
-                schemaType: value.schemaType
+                schemaType: value.schemaType,
+                enumValues: value.enumValues
             )
         }
     }
@@ -128,6 +130,9 @@ enum MCPServer {
             var property: [String: Any] = ["type": parameter.schemaType]
             if !parameter.help.isEmpty {
                 property["description"] = parameter.help
+            }
+            if let values = parameter.enumValues {
+                property["enum"] = values
             }
             properties[parameter.name] = property
             if parameter.required {
