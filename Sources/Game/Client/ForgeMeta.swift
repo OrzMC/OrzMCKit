@@ -1,6 +1,7 @@
 import CacheKit
 import Foundation
 import JokerKits
+import TransferKit
 
 /// Forge 客户端附加组件解析（Maven `promotions_slim` + 官方安装器）。
 ///
@@ -92,14 +93,21 @@ public enum ForgeMeta {
         "\(mavenBase)/\(full)/forge-\(full)-installer.jar"
     }
 
-    static func downloadInstaller(url: String, to path: String) async throws {
+    static func downloadInstaller(
+        url: String,
+        to path: String,
+        onEvent: (@Sendable (TransferProgress) -> Void)? = nil
+    ) async throws {
         guard let source = URL(string: url) else { throw ForgeMetaError.badURL(url) }
         let destination = URL(fileURLWithPath: path)
         try FileManager.default.createDirectory(
             at: destination.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        try await Downloader.download(DownloadItemInfo(sourceURL: source, dstFileURL: destination))
+        try await Downloader.download(
+            DownloadItemInfo(sourceURL: source, dstFileURL: destination),
+            onEvent: onEvent
+        )
     }
 
     /// 读取安装器 jar 内嵌的 `version.json`（`unzip -p`，与 `Client+Music` 同一平台假设）。

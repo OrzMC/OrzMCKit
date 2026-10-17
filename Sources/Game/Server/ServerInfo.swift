@@ -38,6 +38,10 @@ public struct ServerInfo: Sendable {
     // Console
     let console: (any Console)?
 
+    /// 前端进度观察者：无 ConsoleKit 控制台的前端（GUI）用它接收结构化进度；
+    /// CLI 为 `nil`，行为与此前一致。
+    public var onProgress: (@Sendable (LaunchProgress) -> Void)?
+
     public init(
         version: String,
         rootDir: String = GamePlan.defaultRoot,
@@ -54,7 +58,8 @@ public struct ServerInfo: Sendable {
         onlineMode: Bool,
         showJarHelpInfo: Bool,
         jarOptions: String? = nil,
-        console: (any Console)? = nil
+        console: (any Console)? = nil,
+        onProgress: (@Sendable (LaunchProgress) -> Void)? = nil
     ) {
         self.version = version
         self.rootDir = rootDir
@@ -72,5 +77,6 @@ public struct ServerInfo: Sendable {
         self.showJarHelpInfo = showJarHelpInfo
         self.jarOptions = jarOptions
         self.console = console
+        self.onProgress = onProgress
     }
 }

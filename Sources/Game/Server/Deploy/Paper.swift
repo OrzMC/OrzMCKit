@@ -10,6 +10,7 @@ import Utils
 import Foundation
 import ConsoleKit
 import DownloadAPI
+import TransferKit
 
 enum PaperServerError: Error {
     case versionRespFailed
@@ -119,35 +120,58 @@ public struct PaperServer: Server {
         let jarFileURL = dirURL.appending(path: name)
 
         if serverInfo.forceDownload || !FileManager.default.fileExists(atPath: jarFileURL.path()) {
-            let progressBar = console?.progressBar(title: "正在下载服务端文件")
-            progressBar?.start()
-            guard let (dataStream, total) = try await client.downloadBuild(
-                project: DownloadAPIClient.Project.paper,
-                version: version,
-                build: build,
-                bufferSize: 512 * 1024)
-            else {
-                progressBar?.fail()
-                return nil
-            }
+            let progress = ProgressReporter(
+                console: console,
+                title: "正在下载服务端文件",
+                observer: serverInfo.onProgress
+            )
+            try await progress.tracking {
+                guard let (dataStream, total) = try await client.downloadBuild(
+                    project: DownloadAPIClient.Project.paper,
+                    version: version,
+                    build: build,
+                    bufferSize: 512 * 1024
+                )
+                else {
+                    throw PaperServerError.downloadURLFailed
+                }
 
-            var jarData = Data()
-            for try await byteChunkResult in dataStream {
-                switch byteChunkResult {
-                case .success(let byteChunk):
-                    jarData.append(byteChunk)
-                    let progress = Double(jarData.count) / Double(total)
-                    progressBar?.activity.currentProgress = progress
-                case .failure(let error):
+                // 流式落盘（不再整包堆内存）：临时件 → 原子替换。
+                let temporaryURL = jarFileURL.appendingPathExtension("download")
+                try? FileManager.default.removeItem(at: temporaryURL)
+                FileManager.default.createFile(atPath: temporaryURL.path(), contents: nil)
+                let fileHandle = try FileHandle(forWritingTo: temporaryURL)
+                var received: Int64 = 0
+                do {
+                    for try await byteChunkResult in dataStream {
+                        switch byteChunkResult {
+                        case .success(let byteChunk):
+                            try fileHandle.write(contentsOf: Data(byteChunk))
+                            received += Int64(byteChunk.count)
+                            progress.update(
+                                TransferProgress(
+                                    kind: .bytes,
+                                    total: total > 0 ? Int64(total) : nil,
+                                    current: received
+                                )
+                            )
+                        case .failure(let error):
+                            throw error
+                        }
+                    }
+                    try fileHandle.close()
+                } catch {
+                    try? fileHandle.close()
+                    try? FileManager.default.removeItem(at: temporaryURL)
                     throw error
                 }
-            }
-            progressBar?.succeed()
 
-            if !FileManager.default.fileExists(atPath: dirURL.path()) {
-                try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: dirURL.path()) {
+                    try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
+                }
+                try? FileManager.default.removeItem(at: jarFileURL)
+                try FileManager.default.moveItem(at: temporaryURL, to: jarFileURL)
             }
-            try jarData.write(to: jarFileURL, options: .atomic)
         }
         
         let major = await JavaRuntime.javaMajor(forMCVersion: version, root: serverInfo.rootDir)

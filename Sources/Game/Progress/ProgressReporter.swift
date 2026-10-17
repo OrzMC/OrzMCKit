@@ -7,17 +7,25 @@ import TransferKit
 /// - **count / bytes 分开**：两者都来自 `TransferProgress`，百分比与速度语义不混用；
 /// - **不定长**：`total == nil` 时不画「0%」假进度，改为输出一行状态
 ///   （对齐 Python `ProgressSink.status()`），慢网络不会表现为静默等待；
-/// - **归属**：进度由传输层单线程喂入，这里只做渲染，不跨线程累加。
+/// - **归属**：进度由传输层单线程喂入，这里只做渲染，不跨线程累加；
+/// - **前端观察者**：`observer` 把同一条进度以 [`LaunchProgress`] 交出去，供无控制台的
+///   前端（GUI 等）驱动 UI；CLI 不传，行为与之前完全一致。
 public final class ProgressReporter: @unchecked Sendable {
     private let console: (any Console)?
     private let bar: ActivityIndicator<ProgressBar>?
     private let title: String
+    private let observer: (@Sendable (LaunchProgress) -> Void)?
     private let lock = NSLock()
     private var announcedIndefinite = false
 
-    public init(console: (any Console)?, title: String) {
+    public init(
+        console: (any Console)?,
+        title: String,
+        observer: (@Sendable (LaunchProgress) -> Void)? = nil
+    ) {
         self.console = console
         self.title = title
+        self.observer = observer
         self.bar = console?.progressBar(title: title)
     }
 
@@ -27,6 +35,8 @@ public final class ProgressReporter: @unchecked Sendable {
     }
 
     public func update(_ event: TransferProgress) {
+        // 观察者在锁外调用：前端回调可能切线程（GUI 走 MainActor），不应拖住渲染锁。
+        observer?(LaunchProgress(event, label: title))
         lock.lock()
         defer { lock.unlock() }
         if let fraction = event.fraction {
