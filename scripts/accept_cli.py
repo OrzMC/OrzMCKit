@@ -344,7 +344,8 @@ def case_envelope_matrix(ctx: Context) -> None:
     expect_error(ctx.sandbox.run("--json", "plugin"), "plugin", "E_USAGE")
     expect_error(ctx.sandbox.run("--json", "update", "--channel", "nope"), "update", "E_USAGE")
     expect_error(ctx.sandbox.run("--json", "remove", "-v", "9.9.9", "--root-dir", root), "remove", "E_NOT_FOUND")
-    expect_error(ctx.sandbox.run("--json", "--root-dir", root, "uninstall"), "uninstall", "E_CANCELLED")
+    # --force:被测二进制在 .build 里,开发环境护栏会先拦下来;这条只验证「非交互缺 --yes → 取消」。
+    expect_error(ctx.sandbox.run("--json", "--root-dir", root, "uninstall", "--force"), "uninstall", "E_CANCELLED")
 
 
 @case("envelope", "failures-do-not-print-human-lines-to-stdout")
@@ -401,16 +402,19 @@ def case_list_installed(ctx: Context) -> None:
 
 @case("contract", "uninstall-without-yes-is-cancelled")
 def case_uninstall_cancel(ctx: Context) -> None:
-    result = ctx.sandbox.run("--json", "--root-dir", str(ctx.sandbox.root), "uninstall")
+    # --force:让「开发环境护栏」不抢先,这里只验证非交互缺 --yes → 取消。
+    result = ctx.sandbox.run("--json", "--root-dir", str(ctx.sandbox.root), "uninstall", "--force")
     expect_error(result, "uninstall", "E_CANCELLED")
 
 
 @case("contract", "non-interactive-never-blocks")
 def case_no_blocking(ctx: Context) -> None:
+    # 用**超时**判定是否阻塞,不用墙钟阈值 —— CI 机器忙时 20s 内的正常启动也可能被误判。
+    # 真阻塞(等输入)会一直挂着,由 timeout 触发并在这里变成失败。
     for args in (("list",), ("--json", "list"), ("client", "-t", "paper")):
-        result = ctx.sandbox.run(*args, timeout=30)
+        result = ctx.sandbox.run(*args, timeout=20)
         no_crash(result)
-        check(result.duration < 25, f"{args} 疑似阻塞(耗时 {result.duration:.1f}s)")
+        check(result.duration < 20, f"{args} 疑似阻塞(耗时 {result.duration:.1f}s)")
 
 
 # ── completion ─────────────────────────────────────────────────────────────
