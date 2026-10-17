@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/OrzMC/OrzMCKit/compare/v0.11.0...v0.11.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **cli:** server --type 帮助文本补齐 fabric/forge（0.11.0 已支持） ([#50](https://github.com/OrzMC/OrzMCKit/issues/50)) ([ecc2a9b](https://github.com/OrzMC/OrzMCKit/commit/ecc2a9b3974d98647682390c04c4d8d66e65219c))
+
 ## [0.11.0](https://github.com/OrzMC/OrzMCKit/compare/v0.10.0...v0.11.0) (2026-10-17)
 
 
