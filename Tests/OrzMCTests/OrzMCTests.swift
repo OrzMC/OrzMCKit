@@ -76,6 +76,28 @@ import Testing
         #expect(reparsed.pathLine == manifest.pathLine)
         #expect(reparsed.rootDir == "/tmp/mc")
     }
+
+    /// `surface`（spec §3.1）：标明哪个前端装了 CLI；缺失 = 旧记录。
+    @Test func surfaceIsOptionalAndRoundTrips() {
+        let legacy = InstallManifest(lines: ["tool=orzmc", "schema=1", "root_dir=/tmp/mc"])
+        #expect(legacy.surface == nil)
+        #expect(!legacy.serialized.contains("surface="))
+
+        var manifest = InstallManifest(rootDir: "/tmp/mc")
+        manifest.surface = "gui"
+        #expect(manifest.serialized.contains("surface=gui"))
+        #expect(InstallManifest(lines: manifest.serialized.split(separator: "\n").map(String.init)).surface == "gui")
+    }
+
+    /// `update` 只回写版本等字段，`surface` 必须保留（升级不改变"谁装的"）。
+    @Test func updatingFieldsKeepsSurface() {
+        var manifest = InstallManifest(rootDir: "/tmp/mc")
+        manifest.surface = "gui"
+        manifest.version = "v9.9.9"
+        manifest.platform = "macos-arm64"
+        let reparsed = InstallManifest(lines: manifest.serialized.split(separator: "\n").map(String.init))
+        #expect(reparsed.surface == "gui" && reparsed.version == "v9.9.9")
+    }
 }
 
 /// 版本比较（自升级判定）。
