@@ -25,22 +25,34 @@ extension Console {
         root: String = GamePlan.defaultRoot
     ) async throws -> Version {
         await MojangCache.configure(root: root)
-        guard let releaseVersions = try? await Mojang.versions(type: .release, forceUpdate: refresh), !releaseVersions.isEmpty
+        guard let releaseVersions = try? await Mojang.versions(type: .release, forceUpdate: refresh),
+              !releaseVersions.isEmpty
         else {
             throw GameError.noGameVersions
         }
-        // 显式指定：命中即用，找不到直接报错（不弹交互）。
+        // 快照只在需要时取（显式指定快照 id / 交互切渠道），走同一份清单。
+        func snapshotVersions() async -> [Version] {
+            (try? await Mojang.versions(type: .snapshot, forceUpdate: false)) ?? []
+        }
+        // 显式指定：release 与 snapshot 都找（非 release 一律算 snapshot，B10），找不到直接报错。
         if let version {
-            guard let matched = releaseVersions.first(where: { $0.id == version }) else {
-                throw MojangAPIError.notFound
-            }
-            return matched
+            if let matched = releaseVersions.first(where: { $0.id == version }) { return matched }
+            if let matched = await snapshotVersions().first(where: { $0.id == version }) { return matched }
+            throw MojangAPIError.notFound
         }
         // 非 TTY / `--json`：不阻塞，使用最新 release（B9）。
         guard interactive else {
             return releaseVersions[0]
         }
-        let versions = Array(releaseVersions[releaseVersions.startIndex..<releaseVersions.startIndex + 10])
-        return chooseFromList(versions, display: { $0.id.consoleText() }, hint: Constants.chooseAGameVersion.string, completedHint: Constants.choosedGameVersionHint.string)
+        let snapshots = await snapshotVersions()
+        let state = VersionPickerState(
+            releases: releaseVersions.map(\.id),
+            snapshots: snapshots.map(\.id),
+            pageSize: 10
+        )
+        guard let id = runVersionPicker(console: self, state: state) else {
+            return releaseVersions[0]
+        }
+        return (releaseVersions + snapshots).first(where: { $0.id == id }) ?? releaseVersions[0]
     }
 }

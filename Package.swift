@@ -30,6 +30,7 @@ let package = Package(
                 "Game",
                 "Fabric",
                 .product(name: "CacheKit", package: "OrzSwiftKit"),
+                .product(name: "TransferKit", package: "OrzSwiftKit"),
             ]
         ),
         // MARK: Conformance adapter (drives parent docs/spec fixtures)
@@ -51,6 +52,7 @@ let package = Package(
             .product(name: "CacheKit", package: "OrzSwiftKit"),
             .product(name: "Utils", package: "OrzSwiftKit"),
             .product(name: "RuntimeKit", package: "OrzSwiftKit"),
+            .product(name: "TransferKit", package: "OrzSwiftKit"),
         ]),
         // MARK: Fabric
         .target(

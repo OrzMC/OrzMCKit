@@ -53,15 +53,18 @@ public struct FabricServer: Server {
         let vanillaJar = URL(fileURLWithPath: serverDir + "/server.jar")
         if serverInfo.forceDownload { try? FileManager.default.removeItem(at: vanillaJar) }
         if !FileManager.default.fileExists(atPath: vanillaJar.path()) {
-            try await Downloader.download(
-                DownloadItemInfo(
-                    sourceURL: serverURL,
-                    dstFileURL: vanillaJar,
-                    hash: gameVersion.downloads.server.sha1,
-                    hashType: .sha1
-                ),
-                progressBar: serverInfo.console?.progressBar(title: "正在下载服务端文件")
-            )
+            let progress = ProgressReporter(console: serverInfo.console, title: "正在下载服务端文件")
+            try await progress.tracking {
+                try await Downloader.download(
+                    DownloadItemInfo(
+                        sourceURL: serverURL,
+                        dstFileURL: vanillaJar,
+                        hash: gameVersion.downloads.server.sha1,
+                        hashType: .sha1
+                    ),
+                    onEvent: progress.update
+                )
+            }
         }
 
         // 2) fabric-installer + loader（经统一缓存；`--refresh` 绕过）
@@ -79,10 +82,13 @@ public struct FabricServer: Server {
         let buildDir = layout.serverBuildDir
         try FileManager.default.createDirectory(atPath: buildDir, withIntermediateDirectories: true)
         let installerPath = "\(buildDir)/fabric-installer-\(installerVersion).jar"
-        try await Downloader.download(
-            DownloadItemInfo(sourceURL: installerURL, dstFileURL: URL(fileURLWithPath: installerPath)),
-            progressBar: serverInfo.console?.progressBar(title: "下载 fabric-installer")
-        )
+        let installerProgress = ProgressReporter(console: serverInfo.console, title: "下载 fabric-installer")
+        try await installerProgress.tracking {
+            try await Downloader.download(
+                DownloadItemInfo(sourceURL: installerURL, dstFileURL: URL(fileURLWithPath: installerPath)),
+                onEvent: installerProgress.update
+            )
+        }
 
         // 3) 生成 fabric-server-launch.jar（安装器日志走 stderr，stdout 留给 --json）
         let mcMajor = await JavaRuntime.javaMajor(forMCVersion: version, root: serverInfo.rootDir)
