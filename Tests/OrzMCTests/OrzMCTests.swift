@@ -34,7 +34,7 @@ import Testing
     }
 
     @Test func completionNativeShells() {
-        // ConsoleKit 原生只支持 bash/zsh（fish/powershell 显式不支持）。
+        // ConsoleKit 原生只渲染 bash/zsh；fish/powershell 由 `CompletionScripts` 生成。
         #expect(Shell(rawValue: "bash") != nil)
         #expect(Shell(rawValue: "zsh") != nil)
         #expect(Shell(rawValue: "fish") == nil)

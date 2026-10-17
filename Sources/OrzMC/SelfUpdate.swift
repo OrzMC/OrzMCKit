@@ -8,6 +8,8 @@ import Game
 enum SelfUpdate {
     static let repo = "OrzMC/OrzMCKit"
     static let stagingName = ".orzmc-update.tmp"
+    /// 升级助手日志（一行 `DONE` / `FAILED`；对齐 Python `UPDATE_LOG_NAME`）。
+    static let updateLogName = ".orzmc-update.log"
     static var apiLatest: String { "https://api.github.com/repos/\(repo)/releases/latest" }
     static var apiReleases: String { "https://api.github.com/repos/\(repo)/releases?per_page=10" }
     static var downloadBase: String { "https://github.com/\(repo)/releases/download" }
@@ -27,6 +29,15 @@ enum SelfUpdate {
         return "orzmc-macos-arm64"
         #else
         return "orzmc-macos-x86_64"
+        #endif
+    }
+
+    /// 安装记录里的 `platform` 字段（对齐 Python `platform_tag`）。
+    static func platformTag() -> String {
+        #if arch(arm64)
+        return "macos-arm64"
+        #else
+        return "macos-x86_64"
         #endif
     }
 
@@ -125,22 +136,28 @@ enum SelfUpdate {
         let staging = installDir + "/" + stagingName
         try? FileManager.default.removeItem(atPath: staging)
 
-        if let file {
-            let local = URL(fileURLWithPath: file).standardizedFileURL.path
-            guard FileManager.default.fileExists(atPath: local) else {
-                throw CLIError("本地文件不存在: \(local)", code: "E_USAGE")
+        do {
+            if let file {
+                let local = URL(fileURLWithPath: file).standardizedFileURL.path
+                guard FileManager.default.fileExists(atPath: local) else {
+                    throw CLIError("本地文件不存在: \(local)", code: "E_USAGE")
+                }
+                try FileManager.default.copyItem(atPath: local, toPath: staging)
+            } else {
+                guard let urlString = target.url else {
+                    throw CLIError("没有可下载的版本", code: "E_RUNTIME")
+                }
+                let (data, _) = try await get(urlString)
+                try data.write(to: URL(fileURLWithPath: staging))
             }
-            try FileManager.default.copyItem(atPath: local, toPath: staging)
-        } else {
-            guard let urlString = target.url else {
-                throw CLIError("没有可下载的版本", code: "E_RUNTIME")
-            }
-            let (data, _) = try await get(urlString)
-            try data.write(to: URL(fileURLWithPath: staging))
-        }
 
-        try verifyExecutable(staging)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: staging)
+            try verifyExecutable(staging)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: staging)
+        } catch {
+            // 失败的升级绝不能留下半成品（成功交接时才保留给助手重命名）。
+            try? FileManager.default.removeItem(atPath: staging)
+            throw error
+        }
         return staging
     }
 
@@ -164,27 +181,46 @@ enum SelfUpdate {
     }
 
     /// 分离助手：等本进程退出后再 `mv` 覆盖（运行中替换自身不安全）。
-    static func handoff(staged: String, binary: String) throws {
+    ///
+    /// 助手把结果写入 `.orzmc-update.log`（`DONE` / `FAILED`）：重定向的 stdout 会被缓冲，
+    /// 没有日志时分不清“助手挂了”与“助手已死”。返回日志路径供调用方提示用户。
+    @discardableResult
+    static func handoff(staged: String, binary: String) throws -> String {
         let pid = ProcessInfo.processInfo.processIdentifier
-        let script = "i=0; while kill -0 \"$1\" 2>/dev/null && [ \"$i\" -lt 300 ]; do sleep 0.2; i=$((i+1)); done; exec mv -f \"$2\" \"$3\""
+        let log = (binary as NSString).deletingLastPathComponent + "/" + updateLogName
+        // 每次升级都从空日志开始：上一次的 DONE 不能被误认为这一次的结果。
+        try? FileManager.default.removeItem(atPath: log)
+        let script = "i=0; while kill -0 \"$1\" 2>/dev/null && [ \"$i\" -lt 300 ]; do sleep 0.2; i=$((i+1)); done; "
+            + "if mv -f \"$2\" \"$3\"; then echo DONE >> \"$4\"; else echo FAILED >> \"$4\"; exit 1; fi"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", script, "orzmc-update", String(pid), staged, binary]
+        process.arguments = ["-c", script, "orzmc-update", String(pid), staged, binary, log]
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         do {
             try process.run()
         } catch {
+            try? FileManager.default.removeItem(atPath: staged)
             throw CLIError("无法启动升级助手,已保留旧版本: \(error)", code: "E_RUNTIME")
         }
+        return log
     }
 
-    /// 升级后回写安装记录（`version` / `source`）。
+    /// 升级后回写安装记录（`version` / `platform` / `source`）。
+    ///
+    /// **只在「安装记录指向的二进制 == 本次替换目标」时才改写**：否则升级一份拷贝
+    /// 会把全局记录改成新版本，而真正安装的二进制仍是旧版（实测过的坑）。
     static func record(target: Target, binary: String, fromFile: Bool) {
         guard let (path, manifest) = InstallManifest.find(binary: binary) else { return }
+        if !manifest.binary.isEmpty {
+            let recorded = URL(fileURLWithPath: manifest.binary).resolvingSymlinksInPath().path
+            let replaced = URL(fileURLWithPath: binary).resolvingSymlinksInPath().path
+            guard recorded == replaced else { return }
+        }
         var updated = manifest
         updated.version = target.latest
+        updated.platform = platformTag()
         updated.source = fromFile ? nil : target.url
         try? updated.write(to: path)
     }

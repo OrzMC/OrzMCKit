@@ -72,7 +72,7 @@ struct UpdateCommand: AsyncCommand {
         }
 
         let staged = try await SelfUpdate.stage(target: target, file: signature.file, binary: binary)
-        try SelfUpdate.handoff(staged: staged, binary: binary)
+        let log = try SelfUpdate.handoff(staged: staged, binary: binary)
         SelfUpdate.record(target: target, binary: binary, fromFile: signature.file != nil)
 
         if options.json {
@@ -85,6 +85,7 @@ struct UpdateCommand: AsyncCommand {
             )
         } else {
             context.console.success("已升级到 \(target.latest)(本命令退出后生效)")
+            context.console.print("升级助手日志: \(log)")
         }
     }
 
