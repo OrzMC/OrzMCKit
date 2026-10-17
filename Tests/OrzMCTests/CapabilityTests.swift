@@ -47,6 +47,27 @@ import Testing
 }
 
 /// fish / PowerShell 补全由同一份 `capabilityList()` 渲染（ConsoleKit 不支持它们）。
+/// 补全落点的 shell 判定（规范 `cli-surface.md` §4.5:只读 `$SHELL`,不做进程探测）。
+@Suite struct CompletionShellResolutionTests {
+    @Test func normalizesShellPath() {
+        #expect(CompletionCommand.normalizedShell("/bin/zsh") == "zsh")
+        #expect(CompletionCommand.normalizedShell("/usr/local/bin/fish") == "fish")
+        #expect(CompletionCommand.normalizedShell("/opt/homebrew/bin/bash") == "bash")
+        #expect(CompletionCommand.normalizedShell("/usr/local/bin/pwsh") == "pwsh")
+    }
+
+    @Test func rejectsUnknownAndEmpty() {
+        #expect(CompletionCommand.normalizedShell("/bin/tcsh") == nil)
+        #expect(CompletionCommand.normalizedShell("") == nil)
+        #expect(CompletionCommand.normalizedShell(nil) == nil)
+    }
+
+    @Test func scriptOnlyShellsMatchSpec() {
+        // frontends.md F6:powershell/pwsh 只生成脚本、不落盘。
+        #expect(CompletionCommand.scriptOnlyShells == ["powershell", "pwsh"])
+    }
+}
+
 @Suite struct CompletionScriptTests {
     @Test func fishListsCommandsAndOptions() {
         let script = CompletionScripts.fish(CommandGroup(options: GlobalOptions()).capabilityList())

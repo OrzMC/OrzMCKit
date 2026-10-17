@@ -48,6 +48,32 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
+  # CLI 行为验收(父仓库 `docs/spec/conformance.md` §12):帮助 / 信封 / 退出码 /
+  # 取消语义 / 补全落点 / MCP,全部走**真实进程**。与 Python 侧
+  # `OrzPythonMC/scripts/accept_cli.py` 同分组、同语义(都用标库,断言按规范写)。
+  # 单测跑不到的东西(进程退出码、非 TTY、真实文件落点)由它兜住。
+  cli-acceptance:
+    # 只用标准 GitHub-hosted runner；勿改 `-large`/`-xlarge`（larger runner，即使 public 也计费）。
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore SwiftPM cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-debug-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            spm-${{ runner.os }}-debug-
+
+      - name: Build orzmc
+        run: swift build -c debug --product orzmc
+
+      - name: CLI acceptance
+        run: python3 scripts/accept_cli.py
+
   conformance:
     # 只用标准 GitHub-hosted runner；勿改 `-large`/`-xlarge`（larger runner，即使 public 也计费）。
     runs-on: macos-15
