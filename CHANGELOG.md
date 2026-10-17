@@ -3,6 +3,16 @@
 ## [0.13.0](https://github.com/OrzMC/OrzMCKit/compare/v0.12.0...v0.13.0) (2026-10-17)
 
 
+### ⚠️ 升级须知（脚本调用需加 --yes / 补全行为变化）
+
+- 脚本里调用 **`orzmc remove` / `orzmc uninstall` / `orzmc app uninstall` 现在必须显式 `--yes`**，
+  否则按规范返回取消并退出 **130**（以前非交互会直接执行）。
+- `completion install` 在 **PowerShell** 下明确返回「不支持自动安装补全」（规范 F6：只生成脚本）。
+  请用 `orzmc completion powershell` 把脚本加入 `$PROFILE`。
+- `completion install` 现在会把补全路径登记进 `install.conf` 的 `completion_file`，
+  `orzmc uninstall` 会一并清理；`completion <shell>` 的 `shell` 字段回显请求值（`pwsh` 不再折叠）。
+- 安装器新增 `ORZMC_NO_COMPLETION=1`：安装时不装补全。
+
 ### Features
 
 * **cli:** 对齐 CLI 契约 0.2（非交互取消 / 补全 hint 与 E_USAGE / CLI 验收） ([#56](https://github.com/OrzMC/OrzMCKit/issues/56)) ([e96de48](https://github.com/OrzMC/OrzMCKit/commit/e96de486ff0bbb5a4b2bd5a7c10bcb15925621ac))
