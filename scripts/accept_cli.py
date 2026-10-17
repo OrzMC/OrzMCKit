@@ -632,6 +632,21 @@ def resolve_cli(explicit: str | None) -> list[str]:
     )
 
 
+def _force_utf8_stdio() -> None:
+    """Windows 控制台默认 cp1252,打印中文会 UnicodeEncodeError —— 显式切 UTF-8。
+
+    与 `accept_selfupdate.py` 同一手法;CI 的 windows runner 真的会在第一行中文上炸。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):  # pragma: no cover - 已被替换流(如测试捕获)
+            pass
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="orzmc CLI 行为验收(Swift 实现;按规范断言)")
     parser.add_argument("--cli", help="被测可执行文件(缺省 .build/debug/orzmc)")
@@ -643,6 +658,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--keep", action="store_true", help="保留沙箱目录(排障用)")
     parser.add_argument("-v", "--verbose", action="store_true", help="打印每个用例的输出")
     args = parser.parse_args(argv)
+    _force_utf8_stdio()
 
     only = {item.strip() for item in args.only.split(",") if item.strip()}
     cases = selected_cases(only=only, network=args.network)
