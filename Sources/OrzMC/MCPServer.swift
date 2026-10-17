@@ -91,7 +91,7 @@ struct MCPInvalidParams: Error {
 /// - stdout **只**输出 JSON-RPC 消息；日志 / 进度由被转调命令写 stderr（子进程捕获）。
 enum MCPServer {
     /// 不暴露给 AI 的元 / 自毁命令（§8.2）。
-    static let excludedTools: Set<String> = ["capabilities", "completion", "mcp", "self-uninstall"]
+    static let excludedTools: Set<String> = ["capabilities", "completion", "mcp", "uninstall"]
 
     static let defaultProtocolVersion = "2025-06-18"
 

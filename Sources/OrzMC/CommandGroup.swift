@@ -12,12 +12,12 @@ enum Feature: String, CaseIterable {
     case completion
     case capabilities
     case update
-    case selfUninstall
+    case uninstall
     case app
     case mcp
 
-    /// CLI 中的命令名（`selfUninstall` → `self-uninstall`）。
-    var commandName: String { self == .selfUninstall ? "self-uninstall" : rawValue }
+    /// CLI 中的命令名（枚举名即命令名）。
+    var commandName: String { rawValue }
 }
 
 struct CommandGroup: AsyncCommandGroup {
@@ -40,7 +40,7 @@ struct CommandGroup: AsyncCommandGroup {
             .completion: CompletionCommand(options: options, root: { CommandGroup(options: options) }),
             .capabilities: CapabilitiesCommand(options: options),
             .update: UpdateCommand(options: options),
-            .selfUninstall: SelfUninstallCommand(options: options),
+            .uninstall: UninstallCommand(options: options),
             .app: AppCommand(options: options),
             .mcp: MCPCommand(options: options),
         ]

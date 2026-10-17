@@ -2,9 +2,9 @@ import ConsoleKit
 import Foundation
 import Game
 
-/// `orzmc self-uninstall`：卸载工具自身（删二进制 / 还原 PATH / 删补全；
+/// `orzmc uninstall`：卸载工具自身（删二进制 / 还原 PATH / 删补全；
 /// 游戏数据默认保留；规范 `docs/spec/install-update.md` §9）。
-struct SelfUninstallCommand: AsyncCommand {
+struct UninstallCommand: AsyncCommand {
     let options: GlobalOptions
 
     struct Signature: CommandSignature {
@@ -79,7 +79,7 @@ struct SelfUninstallCommand: AsyncCommand {
         InstallSupport.pruneEmpty((targetBinary as NSString).deletingLastPathComponent)
 
         if options.json {
-            JSONOutput.success(command: "self-uninstall", data: ["uninstalled": true, "removed": removed])
+            JSONOutput.success(command: "uninstall", data: ["uninstalled": true, "removed": removed])
         } else {
             context.console.success("已卸载 orzmc")
         }

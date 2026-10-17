@@ -95,6 +95,6 @@ extension VersionCommand: CapabilityDescribing {}
 extension CompletionCommand: CapabilityDescribing {}
 extension CapabilitiesCommand: CapabilityDescribing {}
 extension UpdateCommand: CapabilityDescribing {}
-extension SelfUninstallCommand: CapabilityDescribing {}
+extension UninstallCommand: CapabilityDescribing {}
 extension AppCommand: CapabilityDescribing {}
 extension MCPCommand: CapabilityDescribing {}
