@@ -3,6 +3,15 @@
 ## [0.10.0](https://github.com/OrzMC/OrzMCKit/compare/v0.9.1...v0.10.0) (2026-10-17)
 
 
+### ⚠️ 升级须知（卸载命令改名）
+
+「卸载工具自身」的子命令由 `self-uninstall` 改名为 **`uninstall`**（`remove` 仍是移除 Minecraft 版本，语义不变）：
+
+- 旧名 `self-uninstall` **已不存在**，请改用 `orzmc uninstall`（选项不变：`--yes` / `--remove-root` / `--force`）；
+- 若脚本 / 文档里写了 `orzmc self-uninstall`，请替换为 `orzmc uninstall`；
+- 规范（`docs/spec/cli-surface.json`）与两套实现（Python / Swift CLI）已同步；Swift 类型 `SelfUninstallCommand` → `UninstallCommand`。
+
+
 ### Features
 
 * **cli:** 卸载命令 self-uninstall → uninstall（规范先行） ([#45](https://github.com/OrzMC/OrzMCKit/issues/45)) ([f277e4f](https://github.com/OrzMC/OrzMCKit/commit/f277e4f52d7f81019058aeea9107fa4d2169dfd7))
