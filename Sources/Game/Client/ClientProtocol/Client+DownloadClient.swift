@@ -12,8 +12,11 @@ public extension Client {
         let items = try await generateDownloadItemInfos()
         let console = clientInfo.console
         console?.pushEphemeral()
-        let progressBar = console?.progressBar(title: "正在下载客户端文件")
-        try await Downloader.download(items, progressBar: progressBar, onProgress: onProgress)
+        // 结构化进度（B8）：count/bytes 分开，不定长走状态行。
+        let progress = ProgressReporter(console: console, title: "正在下载客户端文件")
+        try await progress.tracking {
+            try await Downloader.download(items, onProgress: onProgress, onEvent: progress.update)
+        }
         console?.popEphemeral()
         console?.success("下载客户端文件完成")
     }

@@ -86,8 +86,10 @@ public struct Launcher: Client {
         guard let downloadItemInfos = fabricDownloadItems() else {
             return
         }
-        let progressBar = self.clientInfo.console?.progressBar(title: "开始下载Fabric库文件")
-        try await Downloader.download(downloadItemInfos, progressBar: progressBar)
+        let progress = ProgressReporter(console: clientInfo.console, title: "开始下载Fabric库文件")
+        try await progress.tracking {
+            try await Downloader.download(downloadItemInfos, onEvent: progress.update)
+        }
         self.clientInfo.console?.success("下载Fabric库文件完成")
     }
     

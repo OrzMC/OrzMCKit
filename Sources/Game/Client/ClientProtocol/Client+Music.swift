@@ -17,10 +17,10 @@ public extension Client {
         if !FileManager.default.fileExists(atPath: jar) {
             let items = try await generateDownloadItemInfos()
             if let jarItem = items.first(where: { $0.dstFileURL.path == jar }) {
-                try await Downloader.download(
-                    jarItem,
-                    progressBar: console?.progressBar(title: "正在下载客户端 jar")
-                )
+                let progress = ProgressReporter(console: console, title: "正在下载客户端 jar")
+                try await progress.tracking {
+                    try await Downloader.download(jarItem, onEvent: progress.update)
+                }
             }
         }
         guard FileManager.default.fileExists(atPath: jar) else {

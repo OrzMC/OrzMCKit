@@ -290,14 +290,24 @@ func opNonTtyDefaults(_ given: [String: Any]) throws -> [String: Any] {
 
 func opNormalizeProgress(_ given: [String: Any]) -> [String: Any] {
     let input = given["input"] as? [String: Any] ?? [:]
-    let total = input["total"]
+    // 用**真实模型** `TransferProgress` 归一，而不是直拷输入：这样 fixture 真的在验证
+    // 「kind 只允许 count/bytes」与「total == nil ⇒ 不定长」（B8）。
+    let kind = TransferProgress.Kind(rawValue: input["kind"] as? String ?? "count") ?? .count
+    let total = isNull(input["total"]) ? nil : (input["total"] as? NSNumber)?.int64Value
+    let current = (input["current"] as? NSNumber)?.int64Value ?? 0
+    let event = TransferProgress(
+        kind: kind,
+        description: input["description"] as? String,
+        total: total,
+        current: current
+    )
     return [
-        "kind": input["kind"] as? String ?? "count",
-        "description": input["description"] ?? NSNull(),
-        "total": isNull(total) ? NSNull() : total!,
-        "current": input["current"] ?? NSNull(),
+        "kind": event.kind.rawValue,
+        "description": event.description ?? NSNull(),
+        "total": event.total.map { $0 as Any } ?? NSNull(),
+        "current": event.current,
         "phase": input["phase"] ?? NSNull(),
-        "indefinite": isNull(total),
+        "indefinite": event.total == nil,
     ]
 }
 
