@@ -1,32 +1,42 @@
 import Foundation
-import Game
 
 /// 安装记录 `install.conf`（key=value 文本；规范 `docs/spec/install-update.md` §2/§3）。
 ///
-/// 与 Python `InstallManifest` 同格式：`uninstall` 据它还原 PATH / 清理补全 /
-/// 定位二进制；`update` 升级后回写 `version`。读取容忍 UTF-8 BOM。
-struct InstallManifest: Sendable {
-    static let fileName = "install.conf"
+/// 这是**跨前端的共享契约**（`docs/spec/frontends.md` §2）：CLI 的 `uninstall` / `update`
+/// 据它还原 PATH、清理补全、定位二进制；GUI 读它显示「CLI 是否已安装 / 由谁安装」。
+/// 因此它属于 `Game` 公共面，而不是某个可执行目标内部实现。
+///
+/// 与 Python `InstallManifest` 同格式；读取容忍 UTF-8 BOM（PS 5.1 写 BOM）。
+public struct InstallManifest: Sendable {
+    public static let fileName = "install.conf"
     /// 记录兜底位置：二进制同目录（规范 §3）。
-    static let fallbackName = ".orzmc-manifest"
+    public static let fallbackName = ".orzmc-manifest"
 
-    var tool = "orzmc"
-    var schema = 1
-    var version = ""
-    var platform = ""
-    var installDir = ""
-    var binary = ""
-    var source: String?
-    var pathFile: String?
-    var pathLine: String?
-    var rootDir: String
-    var completionFile: String?
+    public var tool: String
+    public var schema: Int
+    public var version: String
+    public var platform: String
+    public var installDir: String
+    public var binary: String
+    public var source: String?
+    public var pathFile: String?
+    public var pathLine: String?
+    public var rootDir: String
+    public var completionFile: String?
+    /// 装出这条记录的前端（`cli` / `gui`）；`nil` = 旧记录（未知）。规范 §3.1。
+    public var surface: String?
 
-    init(rootDir: String = GamePlan.defaultRoot) {
+    public init(rootDir: String = GamePlan.defaultRoot) {
+        self.tool = "orzmc"
+        self.schema = 1
+        self.version = ""
+        self.platform = ""
+        self.installDir = ""
+        self.binary = ""
         self.rootDir = rootDir
     }
 
-    init(lines: [String]) {
+    public init(lines: [String]) {
         var fields: [String: String] = [:]
         for line in lines {
             guard let separator = line.firstIndex(of: "=") else { continue }
@@ -44,9 +54,10 @@ struct InstallManifest: Sendable {
         pathLine = fields["path_line"]
         rootDir = fields["root_dir"] ?? GamePlan.defaultRoot
         completionFile = fields["completion_file"]
+        surface = fields["surface"]
     }
 
-    var serialized: String {
+    public var serialized: String {
         var lines = [
             "tool=\(tool)",
             "schema=\(schema)",
@@ -60,22 +71,23 @@ struct InstallManifest: Sendable {
         if let pathLine { lines.append("path_line=\(pathLine)") }
         lines.append("root_dir=\(rootDir)")
         if let completionFile { lines.append("completion_file=\(completionFile)") }
+        if let surface { lines.append("surface=\(surface)") }
         return lines.joined(separator: "\n") + "\n"
     }
 
     // MARK: 位置
 
     /// 状态目录 `${XDG_STATE_HOME:-$HOME/.local/state}/orzmc`。
-    static func stateDir(environment: [String: String] = ProcessInfo.processInfo.environment) -> String {
+    public static func stateDir(environment: [String: String] = ProcessInfo.processInfo.environment) -> String {
         let base = environment["XDG_STATE_HOME"] ?? ((environment["HOME"] ?? NSHomeDirectory()) + "/.local/state")
         return base + "/orzmc"
     }
 
-    static func defaultPath() -> String { stateDir() + "/" + fileName }
+    public static func defaultPath() -> String { stateDir() + "/" + fileName }
 
     // MARK: 读写
 
-    static func read(at path: String) -> InstallManifest? {
+    public static func read(at path: String) -> InstallManifest? {
         guard let data = FileManager.default.contents(atPath: path) else { return nil }
         var text = String(data: data, encoding: .utf8) ?? ""
         if text.hasPrefix("\u{FEFF}") { text.removeFirst() }
@@ -83,7 +95,7 @@ struct InstallManifest: Sendable {
     }
 
     /// 先找状态目录，再找二进制同目录兜底；都无则 nil。
-    static func find(binary: String) -> (path: String, manifest: InstallManifest)? {
+    public static func find(binary: String) -> (path: String, manifest: InstallManifest)? {
         let state = defaultPath()
         if FileManager.default.fileExists(atPath: state), let manifest = read(at: state) {
             return (state, manifest)
@@ -95,7 +107,14 @@ struct InstallManifest: Sendable {
         return nil
     }
 
-    func write(to path: String) throws {
+    /// 只读状态目录里的记录（GUI 用：不关心兜底位置）。
+    public static func current() -> (path: String, manifest: InstallManifest)? {
+        let path = defaultPath()
+        guard let manifest = read(at: path) else { return nil }
+        return (path, manifest)
+    }
+
+    public func write(to path: String) throws {
         try serialized.write(toFile: path, atomically: true, encoding: .utf8)
     }
 }

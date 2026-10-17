@@ -7,6 +7,7 @@
 #   ORZMC_VERSION      指定版本（0.1.0 或 v0.1.0；缺省取最新 release）
 #   ORZMC_INSTALL_DIR  二进制落点（缺省 ${XDG_BIN_HOME:-$HOME/.local/bin}）
 #   ORZMC_ROOT_DIR     游戏根目录（写入 install.conf，缺省 ~/minecraft）
+#   ORZMC_SURFACE      哪个前端装了 CLI（cli|gui，写入 install.conf，缺省 cli）
 #
 # 契约见父仓库 OrzMC/docs/spec/install-update.md。
 set -eu
@@ -96,7 +97,10 @@ if ! "${install_dir}/${BIN_NAME}" completion install >/dev/null 2>&1; then
   completion_file=""
 fi
 
-installed_version="$("${install_dir}/${BIN_NAME}" version 2>/dev/null | awk '{print $2}')"
+# 只取首行：`orzmc version` 之后还会打印合规声明（多行），直接用 awk 会把声明也塞进
+# install.conf 的 version 字段（实测过）。
+installed_version="$("${install_dir}/${BIN_NAME}" version 2>/dev/null | head -n 1 | awk '{print $2}')"
+[ -n "$installed_version" ] || installed_version="unknown"
 
 root_dir="${ORZMC_ROOT_DIR:-$HOME/minecraft}"
 {
@@ -110,6 +114,10 @@ root_dir="${ORZMC_ROOT_DIR:-$HOME/minecraft}"
   [ -n "$path_file" ] && printf 'path_file=%s\n' "$path_file"
   [ -n "$path_line" ] && printf 'path_line=%s\n' "$path_line"
   printf 'root_dir=%s\n' "$root_dir"
+  case "${ORZMC_SURFACE:-cli}" in
+    cli | gui) printf 'surface=%s\n' "${ORZMC_SURFACE:-cli}" ;;
+    *)         printf 'surface=cli\n' ;;
+  esac
   [ -n "$completion_file" ] && printf 'completion_file=%s\n' "$completion_file"
 } > "$manifest"
 printf '安装记录: %s\n' "$manifest"
