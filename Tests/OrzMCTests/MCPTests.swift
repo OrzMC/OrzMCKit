@@ -61,7 +61,7 @@ private func call(_ message: [String: Any], runner: FakeRunner) -> [String: Any]
         for expected in ["client", "server", "list", "app", "remove"] {
             #expect(names.contains(expected))
         }
-        for excluded in ["capabilities", "completion", "mcp", "self-uninstall"] {
+        for excluded in ["capabilities", "completion", "mcp", "uninstall"] {
             #expect(!names.contains(excluded))
         }
     }

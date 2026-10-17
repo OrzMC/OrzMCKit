@@ -3,7 +3,7 @@ import Game
 
 /// 安装记录 `install.conf`（key=value 文本；规范 `docs/spec/install-update.md` §2/§3）。
 ///
-/// 与 Python `InstallManifest` 同格式：`self-uninstall` 据它还原 PATH / 清理补全 /
+/// 与 Python `InstallManifest` 同格式：`uninstall` 据它还原 PATH / 清理补全 /
 /// 定位二进制；`update` 升级后回写 `version`。读取容忍 UTF-8 BOM。
 struct InstallManifest: Sendable {
     static let fileName = "install.conf"
