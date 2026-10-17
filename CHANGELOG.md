@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.11.0](https://github.com/OrzMC/OrzMCKit/compare/v0.10.0...v0.11.0) (2026-10-17)
+
+
+### Features
+
+* **cli:** capabilities 上报枚举 + fish/PowerShell 补全；update 护栏对齐 Python ([#47](https://github.com/OrzMC/OrzMCKit/issues/47)) ([9f91bee](https://github.com/OrzMC/OrzMCKit/commit/9f91beebb74659e04107822be91b3641cc903d2e))
+* **server:** 支持 fabric / forge 服务端 ([#46](https://github.com/OrzMC/OrzMCKit/issues/46)) ([04df994](https://github.com/OrzMC/OrzMCKit/commit/04df994501e70d8a3cffd906b8e10ceab7fb4535))
+* 对齐 B8 结构化进度与 B10 版本选择器（release/snapshot + 搜索） ([#49](https://github.com/OrzMC/OrzMCKit/issues/49)) ([71cbf44](https://github.com/OrzMC/OrzMCKit/commit/71cbf4464c54d94d19c32356e359936e0ceed8d8))
+
 ## [0.10.0](https://github.com/OrzMC/OrzMCKit/compare/v0.9.1...v0.10.0) (2026-10-17)
 
 
