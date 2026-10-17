@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0](https://github.com/OrzMC/OrzMCKit/compare/v0.11.1...v0.12.0) (2026-10-17)
+
+
+### Features
+
+* **engine:** 结构化进度出口 LaunchProgress + 服务端统一进度观察者 ([adca8b3](https://github.com/OrzMC/OrzMCKit/commit/adca8b365c9dd66c17bfd36e704885188c757c82))
+* **engine:** 结构化进度出口 LaunchProgress（GUI 适配 Phase A） ([0d36e26](https://github.com/OrzMC/OrzMCKit/commit/0d36e26da5e41adbf70ade3795176c76de7a3067))
+
 ## [0.11.1](https://github.com/OrzMC/OrzMCKit/compare/v0.11.0...v0.11.1) (2026-10-17)
 
 
