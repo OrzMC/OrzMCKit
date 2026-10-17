@@ -25,6 +25,8 @@ public enum GamePlan {
         public let serverPropertiesPath: String
         public let serverPluginsDir: String
         public let serverWorldDir: String
+        /// 工具私有构建目录（安装器/中间产物）；对齐 Python `server_build_dir()`。
+        public let serverBuildDir: String
         public let javaDir: String
         public let javaMajorDir: String?
         public let javaExecutable: String?
@@ -84,6 +86,7 @@ public enum GamePlan {
             serverPropertiesPath: "\(serverDir)/server.properties",
             serverPluginsDir: "\(serverDir)/plugins",
             serverWorldDir: "\(serverDir)/world",
+            serverBuildDir: "\(serverDir)/build",
             javaDir: javaDir,
             javaMajorDir: javaMajorDir,
             javaExecutable: javaExecutable,

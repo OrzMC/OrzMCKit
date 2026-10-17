@@ -87,6 +87,11 @@ public enum ForgeMeta {
         throw ForgeMetaError.noVersion(mcVersion)
     }
 
+    /// Forge 安装器下载地址（`maven/<full>/forge-<full>-installer.jar`）。
+    public static func installerURL(_ full: String) -> String {
+        "\(mavenBase)/\(full)/forge-\(full)-installer.jar"
+    }
+
     static func downloadInstaller(url: String, to path: String) async throws {
         guard let source = URL(string: url) else { throw ForgeMetaError.badURL(url) }
         let destination = URL(fileURLWithPath: path)
