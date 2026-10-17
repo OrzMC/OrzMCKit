@@ -33,8 +33,15 @@ struct RemoveCommand: AsyncCommand {
             throw CLIError("需要指定要移除的版本 (-v)", code: "E_USAGE")
         }
 
+        // 规范 §7 / B9：破坏性操作在**非 TTY**下必须显式 `--yes`，否则取消（130）。
+        // 注意 `--yes` 会被 ConsoleKit 的全局签名消费（`confirmOverride`），子命令自己
+        // 也声明了一份以保持命令面（capabilities / manifest）一致 —— 两处都算同意。
         let interactive = !options.json && TerminalEnvironment.isInteractive
-        if !signature.yes, interactive,
+        let consented = signature.yes || console.confirmOverride == true
+        if !interactive, !consented {
+            throw CLIError("非交互环境移除需要显式 --yes", code: "E_CANCELLED")
+        }
+        if interactive, !consented,
            !console.confirm("移除 \(version)?".consoleText(.warning)) {
             throw CLIError("已取消移除", code: "E_CANCELLED")
         }

@@ -1,10 +1,18 @@
 import ConsoleKit
 import Foundation
+import Game
 
-/// `orzmc completion`：生成 / 安装 Shell 补全（规范 `docs/spec/cli-surface.md` §9）。
+/// `orzmc completion`：生成 / 安装 Shell 补全（规范 `docs/spec/cli-surface.md` §4.5 / §9、
+/// `frontends.md` F6）。
 ///
 /// bash / zsh 由 ConsoleKit 渲染；fish / PowerShell 由 `CompletionScripts` 依据同一份
 /// `capabilityList()` 生成（ConsoleKit 原生不支持这两个 shell）。
+///
+/// 安装侧（`install`）的硬约束，两套实现一致：
+/// - shell **只读 `$SHELL`**（不做进程探测 / 不执行外部命令探测）；
+/// - 固定落点 + 幂等覆盖，rc 只在必要时补一行；
+/// - `powershell` / `pwsh` 只生成脚本、不落盘 → `install` 明确返回 `E_UNSUPPORTED`；
+/// - 落盘后把路径登记进 `install.conf` 的 `completion_file`，供 `uninstall` 清理。
 struct CompletionCommand: AsyncCommand {
     let options: GlobalOptions
     /// 根命令工厂：渲染补全脚本需要整棵命令树。用闭包延迟构造，避免与
@@ -21,6 +29,16 @@ struct CompletionCommand: AsyncCommand {
     /// 支持的补全目标（与 manifest `completion.target` 的 enum 对齐）。
     static let shells = ["bash", "zsh", "fish", "powershell", "pwsh", "install"]
 
+    /// 按 `frontends.md` F6：只生成脚本、不落盘安装。
+    static let scriptOnlyShells: Set<String> = ["powershell", "pwsh"]
+
+    /// `$SHELL` / 显式目标 → 规范 shell 名（去路径、去 `.exe`、小写）；不认识返回 nil。
+    static func normalizedShell(_ raw: String?) -> String? {
+        guard let raw, !raw.isEmpty else { return nil }
+        let name = ((raw as NSString).lastPathComponent as NSString).deletingPathExtension.lowercased()
+        return shells.contains(name) ? name : nil
+    }
+
     func run(using context: CommandContext, signature: Signature) async throws {
         let target = signature.shell.lowercased()
         if target == "install" {
@@ -29,9 +47,10 @@ struct CompletionCommand: AsyncCommand {
         }
         let script = try render(context: context, target: target)
         if options.json {
+            // `shell` 回显**请求值**（`pwsh` 不折叠成 `powershell`），规范 §4.5。
             JSONOutput.success(
                 command: "completion",
-                data: ["mode": "script", "shell": canonical(target), "script": script]
+                data: ["mode": "script", "shell": target, "script": script]
             )
         } else {
             context.console.print(script, newLine: false)
@@ -47,7 +66,10 @@ struct CompletionCommand: AsyncCommand {
         switch canonical(target) {
         case "bash", "zsh":
             guard let shell = Shell(rawValue: target) else {
-                throw CLIError("不支持的 shell: \(target)", code: "E_UNSUPPORTED")
+                throw CLIError(
+                    "不支持的 shell: \(target)(支持 \(Self.shells.joined(separator: "、")) )",
+                    code: "E_USAGE"
+                )
             }
             return renderConsoleKitScript(context: context, shell: shell)
         case "fish":
@@ -57,7 +79,7 @@ struct CompletionCommand: AsyncCommand {
         default:
             throw CLIError(
                 "不支持的 shell: \(target)(支持 \(Self.shells.joined(separator: "、")) )",
-                code: "E_UNSUPPORTED"
+                code: "E_USAGE"
             )
         }
     }
@@ -70,46 +92,73 @@ struct CompletionCommand: AsyncCommand {
     }
 
     private func install(context: CommandContext) throws {
-        let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? ""
-        let shellName = (shellPath as NSString).lastPathComponent
+        let environment = ProcessInfo.processInfo.environment
+        // 规范 §4.5：只读环境变量；识别不出 → E_USAGE，并给出可执行退路。
+        guard let shellName = Self.normalizedShell(environment["SHELL"]) else {
+            throw CLIError(
+                "无法从 $SHELL 判断当前 shell;请用 `orzmc completion <shell>` 生成脚本后手动安装",
+                code: "E_USAGE"
+            )
+        }
+        guard !Self.scriptOnlyShells.contains(shellName) else {
+            throw CLIError(
+                "\(shellName) 不支持自动安装补全(规范 F6):把 `orzmc completion \(shellName)` 的输出加入 $PROFILE",
+                code: "E_UNSUPPORTED"
+            )
+        }
         // 用 $HOME（可被测试/沙箱覆盖）；NSHomeDirectory() 在 macOS 上会忽略 $HOME。
-        let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
-        let fileManager = FileManager.default
+        let home = environment["HOME"] ?? NSHomeDirectory()
         let completionPath: String
-        var rcNote: String?
+        var hint: String?
 
         switch shellName {
         case "bash":
             completionPath = "\(home)/.local/share/bash-completion/completions/orzmc"
             try writeScript(render(context: context, target: "bash"), to: completionPath)
-            rcNote = ensureLine(
+            // 落点靠 bash-completion 自动加载；没装（如 macOS 自带 bash 3.2）就必须 source。
+            hint = ensureLine(
                 "[ -f \"\(completionPath)\" ] && . \"\(completionPath)\"",
                 in: "\(home)/.bashrc"
             )
         case "zsh":
             completionPath = "\(home)/.zsh/completions/_orzmc"
             try writeScript(render(context: context, target: "zsh"), to: completionPath)
-            rcNote = ensureLine("fpath=(~/.zsh/completions $fpath)", in: "\(home)/.zshrc")
+            hint = ensureLine("fpath+=(~/.zsh/completions); autoload -Uz compinit; compinit", in: "\(home)/.zshrc")
         case "fish":
             completionPath = "\(home)/.config/fish/completions/orzmc.fish"
             // fish 自动加载该目录，无需改 rc。
             try writeScript(render(context: context, target: "fish"), to: completionPath)
         default:
             throw CLIError(
-                "无法从 $SHELL 识别支持的 shell(bash/zsh/fish)；请用 `orzmc completion <shell>` 手动生成",
+                "不支持自动安装 \(shellName) 的补全;请用 `orzmc completion \(shellName)` 生成脚本",
                 code: "E_UNSUPPORTED"
             )
         }
 
+        // 登记到 install.conf（§4.5 / F2）：没有安装记录时跳过（开发环境），不报错。
+        Self.recordCompletionFile(completionPath)
+
         if options.json {
             JSONOutput.success(
                 command: "completion",
-                data: ["mode": "install", "shell": shellName, "path": completionPath]
+                data: [
+                    "mode": "install",
+                    "shell": shellName,
+                    "path": completionPath,
+                    "hint": hint.map { $0 as Any } ?? NSNull(),
+                ]
             )
         } else {
             context.console.success("已安装 \(shellName) 补全: \(completionPath)")
-            if let rcNote { context.console.print(rcNote) }
+            if let hint { context.console.print(hint) }
         }
+    }
+
+    /// 把补全路径写进安装记录（`frontends.md` F2：卸载要清掉自己装的东西）。
+    static func recordCompletionFile(_ completionPath: String) {
+        guard var found = InstallManifest.find(binary: InstallSupport.runningBinary()) else { return }
+        found.manifest.completionFile = completionPath
+        try? found.manifest.write(to: found.path)
     }
 
     private func writeScript(_ script: String, to path: String) throws {

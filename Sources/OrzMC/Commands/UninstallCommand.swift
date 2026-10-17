@@ -37,10 +37,15 @@ struct UninstallCommand: AsyncCommand {
         let targetBinary = manifest?.binary.isEmpty == false ? manifest!.binary : binary
         let rootDir = signature.rootDir ?? manifest?.rootDir ?? GamePlan.defaultRoot
 
+        // 规范 §7 / B9 + frontends.md F2：卸载是破坏性操作，非 TTY 必须显式 `--yes`。
         let interactive = !options.json && TerminalEnvironment.isInteractive
+        let consented = signature.yes || context.console.confirmOverride == true
+        if !interactive, !consented {
+            throw CLIError("非交互环境卸载需要显式 --yes(游戏数据默认保留)", code: "E_CANCELLED")
+        }
         if signature.removeRoot {
             try validateRoot(rootDir)
-            if !signature.yes, interactive,
+            if interactive, !consented,
                !context.console.confirm("将删除游戏数据目录 \(rootDir)，确定继续?".consoleText(.error)) {
                 throw CLIError("已取消卸载", code: "E_CANCELLED")
             }

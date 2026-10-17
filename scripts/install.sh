@@ -8,6 +8,7 @@
 #   ORZMC_INSTALL_DIR  二进制落点（缺省 ${XDG_BIN_HOME:-$HOME/.local/bin}）
 #   ORZMC_ROOT_DIR     游戏根目录（写入 install.conf，缺省 ~/minecraft）
 #   ORZMC_SURFACE      哪个前端装了 CLI（cli|gui，写入 install.conf，缺省 cli）
+#   ORZMC_NO_COMPLETION=1  不安装 Shell 补全（规范 install-update.md §5 的 --no-completion）
 #
 # 契约见父仓库 OrzMC/docs/spec/install-update.md。
 set -eu
@@ -87,14 +88,16 @@ case ":${PATH}:" in
     ;;
 esac
 
-# Shell 补全（命令自实现；未实现时静默跳过）。
+# Shell 补全（命令自实现；未实现时静默跳过；--no-completion / ORZMC_NO_COMPLETION=1 关闭）。
 completion_file=""
-case "$(basename "${SHELL:-sh}")" in
-  zsh) completion_file="$HOME/.zsh/completions/_orzmc" ;;
-  bash) completion_file="$HOME/.local/share/bash-completion/completions/orzmc" ;;
-esac
-if ! "${install_dir}/${BIN_NAME}" completion install >/dev/null 2>&1; then
-  completion_file=""
+if [ "${ORZMC_NO_COMPLETION:-0}" != "1" ]; then
+  case "$(basename "${SHELL:-sh}")" in
+    zsh) completion_file="$HOME/.zsh/completions/_orzmc" ;;
+    bash) completion_file="$HOME/.local/share/bash-completion/completions/orzmc" ;;
+  esac
+  if ! "${install_dir}/${BIN_NAME}" completion install >/dev/null 2>&1; then
+    completion_file=""
+  fi
 fi
 
 # 只取首行：`orzmc version` 之后还会打印合规声明（多行），直接用 awk 会把声明也塞进

@@ -86,8 +86,13 @@ struct AppCommand: AsyncCommand {
     }
 
     private func uninstall(_ context: CommandContext, skipConfirm: Bool) throws {
+        // 规范 §7：卸载是破坏性操作，非 TTY 必须显式 `--yes`。
         let interactive = !options.json && TerminalEnvironment.isInteractive
-        if !skipConfirm, interactive,
+        let consented = skipConfirm || context.console.confirmOverride == true
+        if !interactive, !consented {
+            throw CLIError("非交互环境卸载需要显式 --yes", code: "E_CANCELLED")
+        }
+        if interactive, !consented,
            !context.console.confirm("卸载 OrzMC 应用 \(AppInstaller.installedAppPath)?".consoleText(.error)) {
             throw CLIError("已取消卸载", code: "E_CANCELLED")
         }

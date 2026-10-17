@@ -33,10 +33,15 @@ orzmc version                # 工具版本（或全局 orzmc --version）
 orzmc client -v 1.20.4       # 启动客户端（缺失文件自动下载）
 orzmc server -t vanilla -v 1.20.4 --nogui   # 部署并启动服务端
 orzmc list                   # 已安装版本
-orzmc remove -v 1.20.4       # 移除版本
+orzmc remove -v 1.20.4       # 移除版本(脚本里需加 --yes)
 orzmc backup -v 1.20.4       # 备份服务端世界
 orzmc plugin --search luckperms             # Hangar 搜索插件
+orzmc completion install     # 按 $SHELL 安装补全(zsh/bash/fish;幂等)
+orzmc completion zsh > ~/.zsh/completions/_orzmc   # 或只打印脚本自己装
 ```
+
+每个子命令都支持 `--help` / `-h`。**破坏性操作**(`remove` / `uninstall` / `app uninstall`)
+在非交互环境(脚本 / 管道 / `--json`)必须显式 `--yes`,否则按规范返回取消并退出 **130**。
 
 全局选项（须在子命令**之前**）：
 
@@ -59,6 +64,10 @@ orzmc --json list            # 机器可读信封 {ok,command,data,error}（AI/�
 ```sh
 swift build
 swift test
+
+# CLI 行为验收（真实进程；CI 同款；与 Python 侧重名分组一一对应）
+swift build -c debug --product orzmc
+python3 scripts/accept_cli.py
 
 # 一致性套件（需父仓库 fixtures；CI 同款）
 swift build -c debug --product ConformanceAdapter
