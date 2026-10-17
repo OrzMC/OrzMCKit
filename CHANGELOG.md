@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/OrzMC/OrzMCKit/compare/v0.9.1...v0.10.0) (2026-10-17)
+
+
+### Features
+
+* **cli:** 卸载命令 self-uninstall → uninstall（规范先行） ([#45](https://github.com/OrzMC/OrzMCKit/issues/45)) ([f277e4f](https://github.com/OrzMC/OrzMCKit/commit/f277e4f52d7f81019058aeea9107fa4d2169dfd7))
+
+
+### Bug Fixes
+
+* **cli:** 版本声明改多行、去联系邮箱（合规单一事实源生成） ([#43](https://github.com/OrzMC/OrzMCKit/issues/43)) ([a1af7c5](https://github.com/OrzMC/OrzMCKit/commit/a1af7c59998e6c322461f25f4cdfbd012d51e7fc))
+
 ## [0.9.1](https://github.com/OrzMC/OrzMCKit/compare/v0.9.0...v0.9.1) (2026-10-16)
 
 
