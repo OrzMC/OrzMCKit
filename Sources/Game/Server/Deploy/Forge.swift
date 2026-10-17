@@ -1,6 +1,7 @@
 import CacheKit
 import Foundation
 import JokerKits
+import TransferKit
 
 public enum ForgeServerError: Error, CustomStringConvertible {
     case installFailed(Int32)
@@ -73,7 +74,18 @@ public struct ForgeServer: Server {
         let buildDir = layout.serverBuildDir
         try FileManager.default.createDirectory(atPath: buildDir, withIntermediateDirectories: true)
         let installerPath = "\(buildDir)/forge-\(full)-installer.jar"
-        try await ForgeMeta.downloadInstaller(url: ForgeMeta.installerURL(full), to: installerPath)
+        let installerProgress = ProgressReporter(
+            console: serverInfo.console,
+            title: "正在下载 Forge 安装器",
+            observer: serverInfo.onProgress
+        )
+        try await installerProgress.tracking {
+            try await ForgeMeta.downloadInstaller(
+                url: ForgeMeta.installerURL(full),
+                to: installerPath,
+                onEvent: installerProgress.update
+            )
+        }
 
         let mcMajor = await JavaRuntime.javaMajor(forMCVersion: serverInfo.version, root: serverInfo.rootDir)
         let buildJava = try await JavaRuntime.ensure(

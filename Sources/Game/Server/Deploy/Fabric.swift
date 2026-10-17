@@ -53,7 +53,7 @@ public struct FabricServer: Server {
         let vanillaJar = URL(fileURLWithPath: serverDir + "/server.jar")
         if serverInfo.forceDownload { try? FileManager.default.removeItem(at: vanillaJar) }
         if !FileManager.default.fileExists(atPath: vanillaJar.path()) {
-            let progress = ProgressReporter(console: serverInfo.console, title: "正在下载服务端文件")
+            let progress = ProgressReporter(console: serverInfo.console, title: "正在下载服务端文件", observer: serverInfo.onProgress)
             try await progress.tracking {
                 try await Downloader.download(
                     DownloadItemInfo(
@@ -82,7 +82,7 @@ public struct FabricServer: Server {
         let buildDir = layout.serverBuildDir
         try FileManager.default.createDirectory(atPath: buildDir, withIntermediateDirectories: true)
         let installerPath = "\(buildDir)/fabric-installer-\(installerVersion).jar"
-        let installerProgress = ProgressReporter(console: serverInfo.console, title: "下载 fabric-installer")
+        let installerProgress = ProgressReporter(console: serverInfo.console, title: "下载 fabric-installer", observer: serverInfo.onProgress)
         try await installerProgress.tracking {
             try await Downloader.download(
                 DownloadItemInfo(sourceURL: installerURL, dstFileURL: URL(fileURLWithPath: installerPath)),

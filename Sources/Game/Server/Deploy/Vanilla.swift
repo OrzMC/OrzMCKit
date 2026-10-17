@@ -73,7 +73,7 @@ public struct VanillaServer: Server {
 
         // `--force-download`：删除已有核心 jar，强制重新下载。
         if serverInfo.forceDownload { try? FileManager.default.removeItem(at: serverJarFileURL) }
-        let progress = ProgressReporter(console: serverInfo.console, title: "正在下载服务端文件")
+        let progress = ProgressReporter(console: serverInfo.console, title: "正在下载服务端文件", observer: serverInfo.onProgress)
         try await progress.tracking {
             try await Downloader.download(serverJarFileItem, onEvent: progress.update)
         }
