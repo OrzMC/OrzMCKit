@@ -69,6 +69,25 @@ jobs:
           swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
             Tee-Object -FilePath build.log
 
+      - name: Smoke (runtime)
+        if: always()
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $exe = ".build\x86_64-unknown-windows-msvc\debug\orzmc.exe"
+          if (-not (Test-Path $exe)) { Write-Output "(没有 orzmc.exe，跳过)"; exit 0 }
+          Write-Output "--- version"
+          & $exe --version
+          Write-Output "--- capabilities(--json)"
+          & $exe --json capabilities | Select-Object -First 3
+          Write-Output "--- list(--json)"
+          & $exe --json list | Select-Object -First 3
+          Write-Output "--- completion bash"
+          & $exe completion bash | Select-Object -First 3
+          Write-Output "--- 状态目录"
+          if (Test-Path "$env:USERPROFILE\.local\state\orzmc") { Write-Output "存在 ~/.local/state/orzmc" }
+          if (Test-Path "$env:LOCALAPPDATA\orzmc") { Write-Output "存在 %LOCALAPPDATA%\orzmc" }
+
       - name: Error summary
         if: always()
         shell: pwsh
