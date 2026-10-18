@@ -107,6 +107,7 @@ jobs:
       - name: Build (release)
         run: swift build -c release --product orzmc
       - name: Package the binary
+        shell: bash
         run: |
           set -euo pipefail
           BIN="$(swift build -c release --show-bin-path)"
@@ -123,6 +124,7 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
       - name: Assert architecture
+        shell: bash
         run: |
           set -euo pipefail
           info="$(file -b "${{ matrix.asset }}")"
@@ -134,6 +136,7 @@ jobs:
       - name: Assert the binary reports the released version
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
+        shell: bash
         run: |
           set -euo pipefail
           out="$(./${{ matrix.asset }} version)"
@@ -176,6 +179,7 @@ jobs:
       - name: Build (release)
         run: swift build -c release --product orzmc
       - name: Package the binary
+        shell: bash
         run: |
           set -euo pipefail
           BIN="$(swift build -c release --show-bin-path)"
@@ -183,6 +187,7 @@ jobs:
           chmod +x "${{ matrix.asset }}"
           ./"${{ matrix.asset }}" version
       - name: Assert architecture
+        shell: bash
         run: |
           set -euo pipefail
           info="$(file -b "${{ matrix.asset }}")"
@@ -194,6 +199,7 @@ jobs:
       - name: Assert the binary reports the released version
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
+        shell: bash
         run: |
           set -euo pipefail
           out="$(./${{ matrix.asset }} version)"
