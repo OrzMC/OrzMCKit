@@ -1,5 +1,5 @@
 #!/bin/sh
-# OrzMC `orzmc` CLI 一键安装器（macOS，用户级，免 sudo）。
+# OrzMC `orzmc` CLI 一键安装器（macOS / Linux，用户级，免 sudo）。
 #
 #   curl -fsSL https://raw.githubusercontent.com/OrzMC/OrzMCKit/main/scripts/install.sh | sh
 #
@@ -18,8 +18,12 @@ BIN_NAME="orzmc"
 
 err() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
-[ "$(uname -s)" = "Darwin" ] \
-  || err "当前安装器仅支持 macOS；其它平台见 https://github.com/${REPO}#install"
+os=""
+case "$(uname -s)" in
+  Darwin) os="macos" ;;
+  Linux)  os="linux" ;;
+  *) err "当前安装器仅支持 macOS / Linux；Windows 请等 Phase 6.5（见 docs/spec/frontends.md §7.2）" ;;
+esac
 
 arch="$(uname -m)"
 case "$arch" in
@@ -28,7 +32,7 @@ case "$arch" in
   *) err "暂不支持该架构: ${arch}" ;;
 esac
 
-asset="orzmc-macos-${arch}"
+asset="orzmc-${os}-${arch}"
 version="${ORZMC_VERSION:-}"
 case "$version" in
   "")  base="https://github.com/${REPO}/releases/latest/download" ;;
@@ -52,14 +56,16 @@ curl -fL --retry 3 -o "${tmp_dir}/SHA256SUMS" "${base}/SHA256SUMS" \
   || err "下载校验文件失败: ${base}/SHA256SUMS"
 
 ( cd "$tmp_dir" && grep " ${asset}\$" SHA256SUMS > "${asset}.sum" \
-    && shasum -a 256 -c "${asset}.sum" >/dev/null ) \
+    && if command -v sha256sum >/dev/null 2>&1; then sha256sum -c "${asset}.sum" >/dev/null; \
+       else shasum -a 256 -c "${asset}.sum" >/dev/null; fi ) \
   || err "SHA256 校验失败"
 
-# 拒绝 HTML/JSON 错误页：必须是 Mach-O 可执行文件。
+# 拒绝 HTML/JSON 错误页：macOS 必须是 Mach-O，Linux 必须是 ELF。
 magic="$(head -c 4 "${tmp_dir}/${asset}" | od -An -tx1 | tr -d ' \n')"
-case "$magic" in
-  cffaedfe|cefaedfe|cafebabe|bebafeca|feedface|feedfacf) : ;;
-  *) err "下载内容不是有效的 Mach-O 可执行文件(可能命中错误页)" ;;
+case "$os:$magic" in
+  macos:cffaedfe|macos:cefaedfe|macos:cafebabe|macos:bebafeca|macos:feedface|macos:feedfacf) : ;;
+  linux:7f454c46) : ;;
+  *) err "下载内容不是有效的可执行文件(${os}，可能命中错误页)" ;;
 esac
 
 chmod +x "${tmp_dir}/${asset}"
@@ -110,7 +116,7 @@ root_dir="${ORZMC_ROOT_DIR:-$HOME/minecraft}"
   printf 'tool=orzmc\n'
   printf 'schema=1\n'
   printf 'version=%s\n' "$installed_version"
-  printf 'platform=macos-%s\n' "$arch"
+  printf 'platform=%s-%s\n' "$os" "$arch"
   printf 'install_dir=%s\n' "$install_dir"
   printf 'binary=%s\n' "${install_dir}/${BIN_NAME}"
   printf 'source=%s\n' "$base"
@@ -124,5 +130,10 @@ root_dir="${ORZMC_ROOT_DIR:-$HOME/minecraft}"
   [ -n "$completion_file" ] && printf 'completion_file=%s\n' "$completion_file"
 } > "$manifest"
 printf '安装记录: %s\n' "$manifest"
+
+# 备份功能依赖系统 `zip`（极简发行版可能没有）；不影响其它命令，仅提示一次。
+if [ "$os" = "linux" ] && ! command -v zip >/dev/null 2>&1; then
+  printf '\n提示: 未检测到 `zip`，`orzmc backup` 需要它（Debian/Ubuntu: sudo apt install zip）。\n'
+fi
 
 printf '\n完成。运行 %s --help 开始。\n' "$BIN_NAME"

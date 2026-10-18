@@ -218,6 +218,69 @@ jobs:
 
   # 所有平台产物齐了才建/发布 Release：半成品不会出现在 releases/latest 上，
   # 一键安装与 `orzmc update` 也就不会提前把新版本推给用户。
+  # 发布后验收（D14.1 第 1/4 条）：把**用户真正下载到的** Linux 资产拉下来，
+  # 在干净容器里跑 CLI 行为验收 + 安装器全链路（安装 → 补全落盘 → 清单 → 卸载清理）。
+  # 资产坏了这一步就红，而不是等用户踩。
+  verify-linux:
+    needs: publish
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tooling
+        shell: bash
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq curl ca-certificates python3 zip >/dev/null
+
+      - name: Download the published asset
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+          mkdir -p dist
+          curl -fsSL -o dist/orzmc-linux-x86_64 "${base}/orzmc-linux-x86_64"
+          curl -fsSL -o dist/SHA256SUMS "${base}/SHA256SUMS"
+          cd dist && sha256sum -c --ignore-missing SHA256SUMS
+
+      - name: CLI acceptance on the released binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x dist/orzmc-linux-x86_64
+          python3 scripts/accept_cli.py --cli dist/orzmc-linux-x86_64
+
+      - name: Installer end-to-end (install → verify → uninstall)
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          export HOME="$(mktemp -d)"
+          export ORZMC_VERSION="$TAG"
+          export SHELL=/bin/bash
+
+          sh scripts/install.sh
+
+          bin="$HOME/.local/bin/orzmc"
+          completion="$HOME/.local/share/bash-completion/completions/orzmc"
+          manifest="$HOME/.local/state/orzmc/install.conf"
+
+          test -x "$bin" || { echo "::error::未安装二进制"; exit 1; }
+          "$bin" --version | grep -q "orzmc ${TAG#v}" || { echo "::error::版本不符"; exit 1; }
+          test -f "$completion" || { echo "::error::补全未落盘"; exit 1; }
+          grep -q "^platform=linux-x86_64$" "$manifest" || { echo "::error::install.conf platform 不对"; cat "$manifest"; exit 1; }
+          grep -q "^completion_file=" "$manifest" || { echo "::error::install.conf 未登记 completion_file"; cat "$manifest"; exit 1; }
+
+          "$bin" uninstall --yes
+          test ! -e "$bin" || { echo "::error::卸载后二进制仍在"; exit 1; }
+          test ! -e "$completion" || { echo "::error::卸载后补全仍在"; exit 1; }
+          echo "ok: install → verify → uninstall 全链路通过"
+
   publish:
     needs: [build, build-linux]
     runs-on: ubuntu-latest
