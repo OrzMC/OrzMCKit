@@ -147,13 +147,18 @@ jobs:
       - name: Build (orzmc)
         shell: pwsh
         run: |
-          swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
+          # `--static-swift-stdlib`：把 Swift 运行时静态链进去。
+          # 否则 exe 依赖 swiftCore.dll 等运行时 DLL，用户机器没装 Swift 就 STATUS_DLL_NOT_FOUND
+          # （真机实测：0xC0000135）。
+          swift build --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file 2>&1 |
             Tee-Object -FilePath build.log
 
-      - name: Smoke (runtime)
+      - name: Smoke (runtime, 干净 PATH)
         shell: pwsh
         run: |
           $exe = ".build\x86_64-unknown-windows-msvc\debug\orzmc.exe"
+          # 模拟「用户机器没装 Swift」：从 PATH 里摘掉所有 Swift 目录后再跑。
+          $env:Path = ($env:Path -split ';' | Where-Object { $_ -and $_ -notmatch 'Swift' }) -join ';'
           & $exe --version | Select-Object -First 1
           $caps = & $exe --json capabilities | ConvertFrom-Json
           if ($caps.ok -ne $true) { throw "capabilities 信封不对" }
