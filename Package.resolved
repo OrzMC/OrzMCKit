@@ -1,5 +1,5 @@
 {
-  "originHash": "a4eaf84dc3fa27f9efb4f62386c16b18b4a1e8ac559939f7fa7fa652ab763644",
+  "originHash": "d86f84e6835af003e8365288eff93d3a7a0f595a8361832907845a14bf703c99",
   "pins": [
     {
       "identity": "console-kit",
@@ -34,7 +34,7 @@
       "location": "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state": {
         "branch": "main",
-        "revision": "1057e1b7d693c9478ae1f13afa6ff8b5731781eb"
+        "revision": "0c2bca6fea1f6394de5581c55db371f4ea2fc5df"
       }
     },
     {
