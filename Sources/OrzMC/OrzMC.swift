@@ -2,7 +2,9 @@ import ConsoleKit
 import Foundation
 import Game
 
-#if canImport(Darwin)
+#if os(Windows)
+import ucrt          // `exit()`
+#elseif canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
 import Glibc

@@ -35,7 +35,7 @@ let package = Package(
                 .product(name: "TransferKit", package: "OrzSwiftKit"),
                 .product(name: "Crypto",
                          package: "swift-crypto",
-                         condition: .when(platforms: [.linux])),
+                         condition: .when(platforms: [.linux, .windows])),
             ]
         ),
         // MARK: Conformance adapter (drives parent docs/spec fixtures)
@@ -48,7 +48,7 @@ let package = Package(
                 .product(name: "TransferKit", package: "OrzSwiftKit"),
                 .product(name: "Crypto",
                          package: "swift-crypto",
-                         condition: .when(platforms: [.linux])),
+                         condition: .when(platforms: [.linux, .windows])),
             ]
         ),
         // MARK: Game Logic Capsule

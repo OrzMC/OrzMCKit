@@ -7,7 +7,7 @@ import Foundation
 public extension GamePlan {
     /// 默认游戏根目录（`~/minecraft`）。
     static var defaultRoot: String {
-        NSString.path(withComponents: [NSHomeDirectory(), "minecraft"])
+        StatePaths.defaultGameRoot()
     }
 
     // MARK: client

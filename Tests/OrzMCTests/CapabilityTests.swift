@@ -69,6 +69,15 @@ import Testing
 }
 
 @Suite struct CompletionScriptTests {
+    /// 规范 §4.5：脚本里的命令名/函数名固定为 `orzmc`。
+    @Test func programNameNormalizesArgv0() {
+        #expect(CompletionCommand.programName(from: "orzmc") == "orzmc")
+        #expect(CompletionCommand.programName(from: "/usr/local/bin/orzmc") == "orzmc")
+        #expect(CompletionCommand.programName(from: "C:\\Users\\x\\.local\\bin\\orzmc.exe") == "orzmc")
+        #expect(CompletionCommand.programName(from: "C:/tools/orzmc.EXE") == "orzmc")
+        #expect(CompletionCommand.programName(from: "") == "orzmc")
+    }
+
     @Test func fishListsCommandsAndOptions() {
         let script = CompletionScripts.fish(CommandGroup(options: GlobalOptions()).capabilityList())
         #expect(script.contains("complete -c orzmc -f"))

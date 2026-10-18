@@ -1,5 +1,5 @@
 {
-  "originHash": "f0617356a5f42899b468557b5f4a0757b34dcf5b3eed821386144fd6fca52f1f",
+  "originHash": "d86f84e6835af003e8365288eff93d3a7a0f595a8361832907845a14bf703c99",
   "pins": [
     {
       "identity": "console-kit",
@@ -16,7 +16,7 @@
       "location": "https://github.com/OrzMC/MojangAPI.git",
       "state": {
         "branch": "main",
-        "revision": "fb77d5e6eb6746699d70cb7c3a0cb06b63129be6"
+        "revision": "c5a0eadb4e83f4f5b31d7b3fe639907949c53f62"
       }
     },
     {
@@ -34,7 +34,7 @@
       "location": "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state": {
         "branch": "main",
-        "revision": "e1ef97ae2a7a85321c2e8b9bae0ad38af01a8668"
+        "revision": "890eb6f35719281950a9dc842936d2beeafd5b72"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind": "remoteSourceControl",
       "location": "https://github.com/OrzGeeker/OrzSwiftLint.git",
       "state": {
-        "revision": "7865ba8ee934f504467cf4b5b27928860ca838f6",
-        "version": "0.0.8"
+        "revision": "40dfc5f081812fa0b3a099cb9d024cd394966c8a",
+        "version": "0.0.9"
       }
     },
     {

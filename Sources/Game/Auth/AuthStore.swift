@@ -10,10 +10,9 @@ public final class AuthStore: @unchecked Sendable {
         self.path = (stateDir ?? Self.stateDir()) + "/" + Self.fileName
     }
 
-    /// 状态目录 `${XDG_STATE_HOME:-$HOME/.local/state}/orzmc`（与 `InstallManifest` 对齐）。
+    /// 状态目录（与 `InstallManifest` 同一实现，见 `StatePaths`；Windows 走 `%LOCALAPPDATA%`）。
     public static func stateDir(environment: [String: String] = ProcessInfo.processInfo.environment) -> String {
-        let base = environment["XDG_STATE_HOME"] ?? ((environment["HOME"] ?? NSHomeDirectory()) + "/.local/state")
-        return base + "/orzmc"
+        StatePaths.stateDir(environment: environment)
     }
 
     public func load() -> AuthSession? {

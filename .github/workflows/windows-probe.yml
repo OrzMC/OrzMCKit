@@ -1,0 +1,107 @@
+name: Windows Probe
+
+# Windows 构建探针（D14 / Phase 6.5）。**手动触发**：一次约 8–11 分钟，
+# 不适合挂在每个 PR 上；等 W6 把 `windows` 正式 job 并入 ci.yml 后本文件即删。
+#
+# 用法（参数缺省即当前可用组合）：
+#   gh workflow run windows-probe.yml -f swift-version=swift-6.2-release -f swift-build=6.2-RELEASE
+on:
+  workflow_dispatch:
+    inputs:
+      swift-version:
+        description: "Swift 版本分支（如 swift-6.0-release）"
+        required: false
+        default: "swift-6.0-release"
+      runner:
+        description: "runner 标签（windows-2022 = VS 2022；windows-2025 的 VS 18 STL 要求 Clang 20+，当前 Swift 工具链不满足）"
+        required: false
+        default: "windows-2022"
+      swift-build:
+        description: "Swift 构建号（如 6.0-RELEASE）"
+        required: false
+        default: "6.0-RELEASE"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: ${{ inputs.runner || 'windows-2022' }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      # windows-latest 不自带 Swift；这是 Windows 上唯一可靠的安装方式。
+      - name: Install Swift
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: ${{ inputs.swift-version || 'swift-6.0-release' }}
+          swift-build: ${{ inputs.swift-build || '6.0-RELEASE' }}
+          # Windows 上 SDK 的 module map 与工具链版本常常不匹配（会让依赖的 Package.swift
+          # 都编译失败，报 "Invalid manifest … while building module 'ucrt'"）。这个开关会修它。
+          update-sdk-modules: true
+
+      - name: Toolchain
+        shell: pwsh
+        run: |
+          swift --version
+          [Environment]::OSVersion.Version
+
+      # SwiftPM 的构建插件（OpenAPI 生成器）需要在 .build/plugins/debug 建符号链接；
+      # Windows 默认不允许普通用户建符号链接，会退化成
+      # "warning: unable to create symbolic link … A file with the same name already exists"
+      # 然后报 "missing inputs: …GeneratedSources/Server.swift"。开启开发者模式即可。
+      - name: Enable Developer Mode (symlinks for build-tool plugins)
+        shell: pwsh
+        run: |
+          New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" `
+            -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
+
+      - name: Build (orzmc)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
+            Tee-Object -FilePath build.log
+
+      - name: Smoke (runtime)
+        if: always()
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $exe = ".build\x86_64-unknown-windows-msvc\debug\orzmc.exe"
+          if (-not (Test-Path $exe)) { Write-Output "(没有 orzmc.exe，跳过)"; exit 0 }
+          Write-Output "--- version"
+          & $exe --version
+          Write-Output "--- capabilities(--json)"
+          & $exe --json capabilities | Select-Object -First 3
+          Write-Output "--- list(--json)"
+          & $exe --json list | Select-Object -First 3
+          Write-Output "--- completion bash"
+          & $exe completion bash | Select-Object -First 3
+          Write-Output "--- 状态目录"
+          if (Test-Path "$env:USERPROFILE\.local\state\orzmc") { Write-Output "存在 ~/.local/state/orzmc" }
+          if (Test-Path "$env:LOCALAPPDATA\orzmc") { Write-Output "存在 %LOCALAPPDATA%\orzmc" }
+
+      - name: Error summary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Output "==== 错误/缺失模块汇总 ===="
+          if (Test-Path build.log) {
+            Select-String -Path build.log -Pattern "error:", "no such module", "cannot find", "unable to resolve" |
+              ForEach-Object { $_.Line.Trim() } |
+              Sort-Object -Unique |
+              Select-Object -First 60
+          } else {
+            Write-Output "(没有 build.log)"
+          }
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-log
+          path: build.log
+          if-no-files-found: ignore
