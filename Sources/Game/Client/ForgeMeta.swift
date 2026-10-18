@@ -117,10 +117,10 @@ public enum ForgeMeta {
 
     /// 读取安装器 jar 内嵌的 `version.json`（`unzip -p`）；`unzip` 路径由 `PlatformTools` 解析（D8）。
     static func extractVersionPlan(_ installerPath: String) throws -> VersionPlan {
-        guard let unzip = PlatformTools.unzip() else {
+        guard let unzip = PlatformTools.readEntryCommand(archive: installerPath, entry: "version.json") else {
             throw ForgeMetaError.extractFailed(installerPath)
         }
-        let json = try Shell.run(path: unzip, args: ["-p", installerPath, "version.json"])
+        let json = try Shell.run(path: unzip.path, args: unzip.args)
         guard let data = json.data(using: .utf8), !data.isEmpty else {
             throw ForgeMetaError.extractFailed(installerPath)
         }
