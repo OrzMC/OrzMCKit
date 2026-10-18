@@ -48,6 +48,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
+          apt-get update -qq && apt-get install -y -qq zip >/dev/null
           swift test 2>&1 | tee /tmp/test.log | tail -40
 
       - name: CLI acceptance (real process)
