@@ -74,6 +74,8 @@ jobs:
         run: swift test
 
       - name: CLI acceptance
+        # 容器里的默认 shell 是 `sh`（不支持 `set -o pipefail`），显式用 bash。
+        shell: bash
         run: |
           set -euo pipefail
           swift build -c release --product orzmc
