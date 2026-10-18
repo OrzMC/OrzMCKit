@@ -16,6 +16,10 @@ on:
         description: "Swift 版本分支（如 swift-6.0-release）"
         required: false
         default: "swift-6.0-release"
+      runner:
+        description: "runner 标签（windows-2022 = VS 2022；windows-2025 的 VS 18 STL 要求 Clang 20+，当前 Swift 工具链不满足）"
+        required: false
+        default: "windows-2022"
       swift-build:
         description: "Swift 构建号（如 6.0-RELEASE）"
         required: false
@@ -27,7 +31,7 @@ concurrency:
 
 jobs:
   windows:
-    runs-on: windows-latest
+    runs-on: ${{ inputs.runner || 'windows-2022' }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
