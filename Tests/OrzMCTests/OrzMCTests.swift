@@ -196,7 +196,8 @@ import Testing
     }
 
     @Test func defaultRoot() {
-        #expect(GamePlan.defaultRoot.hasSuffix("/minecraft"))
+        // 平台相关分隔符：Windows 是 `\\`，其余是 `/`（规范 state-paths.json）。
+        #expect(GamePlan.defaultRoot.hasSuffix("/minecraft") || GamePlan.defaultRoot.hasSuffix("\\minecraft"))
     }
 
     @Test func clientCapabilityMatrix() {

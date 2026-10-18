@@ -25,10 +25,12 @@ public extension GamePlan {
         let worldsDir = "\(layout.backupDir)/worlds"
         let dest = "\(worldsDir)/\(version)-\(type.rawValue)-\(formatter.string(from: now)).zip"
         try fileManager.createDirectory(atPath: worldsDir, withIntermediateDirectories: true)
-        guard PlatformTools.zip() != nil else {
-            throw GameError.worldNotFound("系统缺少 zip(备份需要;Linux 可 `apt install zip`)")
+        guard let zip = PlatformTools.zipCommand(destination: dest) else {
+            throw GameError.worldNotFound(
+                "系统缺少打包工具(备份需要;Linux 可 `apt install zip`,Windows 自带 tar)"
+            )
         }
-        _ = try Shell.runCommand(with: ["zip", "-r", dest, "."], workDirectory: world)
+        _ = try Shell.run(path: zip.path, args: zip.args, workDirectory: world)
         return dest
     }
 }

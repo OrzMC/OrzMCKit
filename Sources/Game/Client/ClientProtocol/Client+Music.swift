@@ -32,11 +32,11 @@ public extension Client {
 
         // 客户端 jar 内含 `assets/minecraft/sounds/**/*.ogg`；unzip 的 `*` 可跨 `/`。
         // 平台差异：`unzip` 路径由 `PlatformTools` 解析（D8）；缺失时跳过提取（best-effort）。
-        guard let unzip = PlatformTools.unzip() else {
-            console?.warning("系统缺少 unzip，跳过音乐提取")
+        guard let unzip = PlatformTools.unzipCommand(archive: jar, patterns: ["*.ogg"], destination: dest) else {
+            console?.warning("系统缺少解压工具，跳过音乐提取")
             return 0
         }
-        _ = await Shell.run(path: unzip, args: ["-o", jar, "*.ogg", "-d", dest], workDirectory: root)
+        _ = await Shell.run(path: unzip.path, args: unzip.args, workDirectory: root)
 
         let count = countMusicFiles(at: dest)
         console?.success("已提取 \(count) 个音乐文件到 \(dest)")
