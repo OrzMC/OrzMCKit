@@ -245,12 +245,16 @@ jobs:
             -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
       - name: Build (release)
         shell: pwsh
-        run: swift build -c release --product orzmc --only-use-versions-from-resolved-file
+        run: |
+          # 静态链接 Swift 运行时：用户机器通常没装 Swift，动态链接会 STATUS_DLL_NOT_FOUND。
+          swift build -c release --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file
       - name: Package the binary
         shell: pwsh
         run: |
           $bin = (swift build -c release --show-bin-path)
           Copy-Item "$bin\orzmc.exe" "${{ matrix.asset }}"
+          # 用「没有 Swift 的 PATH」验证产物自包含（真机曾出现 0xC0000135 = DLL 找不到）。
+          $env:Path = ($env:Path -split ';' | Where-Object { $_ -and $_ -notmatch 'Swift' }) -join ';'
           & ".\${{ matrix.asset }}" --version | Select-Object -First 1
       - name: Assert the binary reports the released version
         shell: pwsh
