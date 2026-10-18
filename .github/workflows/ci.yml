@@ -153,6 +153,22 @@ jobs:
           swift build --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file 2>&1 |
             Tee-Object -FilePath build.log
 
+      - name: Diagnose dependencies (temporary)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $exe = ".build\x86_64-unknown-windows-msvc\debug\orzmc.exe"
+          Write-Output "--- size: $((Get-Item $exe).Length)"
+          $dumpbin = (Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" | Select-Object -First 1).FullName
+          if ($dumpbin) { & $dumpbin /nologo /dependents $exe }
+          Write-Output "--- 干净 PATH 下运行"
+          $saved = $env:Path
+          $env:Path = ($env:Path -split ';' | Where-Object { $_ -and $_ -notmatch 'Swift' }) -join ';'
+          $out = & $exe --version 2>&1
+          Write-Output ("exit=" + $LASTEXITCODE)
+          $out | ForEach-Object { Write-Output ("OUT: " + $_) }
+          $env:Path = $saved
+
       - name: Smoke (runtime, 干净 PATH)
         shell: pwsh
         run: |
