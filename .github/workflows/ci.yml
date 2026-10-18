@@ -48,6 +48,16 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
+  # 秒级反馈通道:跨平台静态检查。跑在 runner 宿主机上(ubuntu-latest 自带 python3),
+  # 不用容器、不装依赖,~10 秒出结论——把「Apple-only 写法」挡在 2 分钟的构建之前。
+  portability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Portability lint
+        run: python3 scripts/verify/portability.py
+
   # Linux 构建与验收(决策 D14:Swift CLI 收敛为唯一跨平台实现)。
   # 用官方 `swift:6.0` 容器与 `// swift-tools-version:6.0` 对齐;与 macOS job 同门禁:
   # 编译 + 单测 + CLI 行为验收(`scripts/accept_cli.py`,真实进程)。
@@ -63,10 +73,6 @@ jobs:
         run: |
           apt-get update -qq
           apt-get install -y -qq zip python3 >/dev/null
-
-      # 秒级静态检查，先于编译：把 Apple-only 的写法挡在 8 分钟构建之前。
-      - name: Portability lint
-        run: python3 scripts/verify/portability.py
 
       # SwiftPM 冷构建在容器里约 2–3 分钟（约 300–960 步），缓存后只编译本仓改动。
       - name: Restore SwiftPM cache
