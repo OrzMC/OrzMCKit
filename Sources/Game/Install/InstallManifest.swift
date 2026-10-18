@@ -78,9 +78,10 @@ public struct InstallManifest: Sendable {
     // MARK: 位置
 
     /// 状态目录 `${XDG_STATE_HOME:-$HOME/.local/state}/orzmc`。
+    /// 状态目录：`docs/spec/state-paths.json`（Unix `${XDG_STATE_HOME:-~/.local/state}/orzmc`，
+    /// Windows `%LOCALAPPDATA%\\orzmc`）。
     public static func stateDir(environment: [String: String] = ProcessInfo.processInfo.environment) -> String {
-        let base = environment["XDG_STATE_HOME"] ?? ((environment["HOME"] ?? NSHomeDirectory()) + "/.local/state")
-        return base + "/orzmc"
+        StatePaths.stateDir(environment: environment)
     }
 
     public static func defaultPath() -> String { stateDir() + "/" + fileName }

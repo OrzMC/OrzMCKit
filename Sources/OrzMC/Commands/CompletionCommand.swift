@@ -87,8 +87,22 @@ struct CompletionCommand: AsyncCommand {
     /// 以 `orzmc` 为入口渲染脚本（去掉 `completion ...` 的路径偏移）。
     private func renderConsoleKitScript(context: CommandContext, shell: Shell) -> String {
         var renderContext = context
-        renderContext.input.executablePath = [renderContext.input.executablePath.first ?? "orzmc"]
+        let raw = renderContext.input.executablePath.first ?? Self.programName
+        renderContext.input.executablePath = [Self.programName(from: raw)]
         return root().renderCompletionScript(using: renderContext, shell: shell)
+    }
+
+    /// 补全脚本里的函数名/命令名（规范 §4.5：**必须是 `orzmc`**）。
+    ///
+    /// 之前直接用 `argv[0]`，Windows 上会渲染成 `function _D:\a\...\orzmc.exe()`——
+    /// 生成的脚本完全不可用（实测于 Windows 探针）。
+    static let programName = "orzmc"
+
+    /// `argv[0]` → 补全脚本用的命令名：取最后一段路径（`/` 与 `\` 都切）、去 `.exe`、空则回落 `orzmc`。
+    static func programName(from raw: String) -> String {
+        let last = raw.split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init) ?? ""
+        let stripped = last.lowercased().hasSuffix(".exe") ? String(last.dropLast(4)) : last
+        return stripped.isEmpty ? programName : stripped
     }
 
     private func install(context: CommandContext) throws {

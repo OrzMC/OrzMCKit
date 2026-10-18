@@ -56,6 +56,37 @@ import Testing
 }
 
 /// 安装记录读取/回写（规范 install-update.md §3）。
+@Suite struct StatePathsTests {
+    /// 规范 `docs/spec/state-paths.json`：Unix 与 Windows 两套形状。
+    @Test func unixStateDir() {
+        let env = ["HOME": "/home/u"]
+        #expect(StatePaths.stateDir(environment: env, isWindows: false) == "/home/u/.local/state/orzmc")
+        let xdg = ["HOME": "/home/u", "XDG_STATE_HOME": "/xdg/state"]
+        #expect(StatePaths.stateDir(environment: xdg, isWindows: false) == "/xdg/state/orzmc")
+    }
+
+    @Test func windowsStateDir() {
+        let env = ["USERPROFILE": "C:\\Users\\u", "LOCALAPPDATA": "C:\\Users\\u\\AppData\\Local"]
+        #expect(
+            StatePaths.stateDir(environment: env, isWindows: true)
+                == "C:\\Users\\u\\AppData\\Local\\orzmc"
+        )
+        // 缺 `LOCALAPPDATA` 时退回 `%USERPROFILE%\\AppData\\Local`。
+        let noLocal = ["USERPROFILE": "C:\\Users\\u"]
+        #expect(
+            StatePaths.stateDir(environment: noLocal, isWindows: true) == "C:\\Users\\u\\AppData\\Local\\orzmc"
+        )
+    }
+
+    @Test func gameRootFollowsPlatform() {
+        #expect(StatePaths.defaultGameRoot(environment: ["HOME": "/home/u"], isWindows: false) == "/home/u/minecraft")
+        #expect(
+            StatePaths.defaultGameRoot(environment: ["USERPROFILE": "C:\\Users\\u"], isWindows: true)
+                == "C:\\Users\\u\\minecraft"
+        )
+    }
+}
+
 @Suite struct InstallManifestTests {
     @Test func parsesKeyValues() {
         let text = "tool=orzmc\nschema=1\nversion=v0.1.0\nplatform=macos-arm64\ninstall_dir=/tmp/bin\nbinary=/tmp/bin/orzmc\npath_file=/tmp/.zshrc\npath_line=export PATH=\"/tmp/bin:$PATH\"\nroot_dir=/tmp/mc\ncompletion_file=/tmp/_orzmc\n"
