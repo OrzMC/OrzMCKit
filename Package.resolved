@@ -16,7 +16,7 @@
       "location": "https://github.com/OrzMC/MojangAPI.git",
       "state": {
         "branch": "main",
-        "revision": "fb77d5e6eb6746699d70cb7c3a0cb06b63129be6"
+        "revision": "c5a0eadb4e83f4f5b31d7b3fe639907949c53f62"
       }
     },
     {
@@ -34,7 +34,7 @@
       "location": "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state": {
         "branch": "main",
-        "revision": "e1ef97ae2a7a85321c2e8b9bae0ad38af01a8668"
+        "revision": "1057e1b7d693c9478ae1f13afa6ff8b5731781eb"
       }
     },
     {
