@@ -58,6 +58,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 秒级静态检查，先于编译：把 Apple-only 的写法挡在 8 分钟构建之前。
+      - name: Portability lint
+        run: python3 scripts/verify/portability.py
+
+      # SwiftPM 冷构建在容器里约 2–3 分钟（约 300–960 步），缓存后只编译本仓改动。
+      - name: Restore SwiftPM cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .build
+            /root/.cache/org.swift.swiftpm
+          key: spm-${{ runner.os }}-linux-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            spm-${{ runner.os }}-linux-
+
       - name: Toolchain
         run: swift --version
 
@@ -80,6 +96,15 @@ jobs:
           set -euo pipefail
           swift build -c release --product orzmc
           python3 scripts/accept_cli.py --cli .build/release/orzmc
+
+      - name: Save SwiftPM cache
+        if: github.ref == 'refs/heads/main' && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .build
+            /root/.cache/org.swift.swiftpm
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
   # CLI 行为验收(父仓库 `docs/spec/conformance.md` §12):帮助 / 信封 / 退出码 /
   # 取消语义 / 补全落点 / MCP,全部走**真实进程**。与 Python 侧
