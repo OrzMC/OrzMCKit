@@ -1,6 +1,6 @@
 name: Release
 
-# 发布 Swift `orzmc` CLI（macOS）：tag `vX.Y.Z` → 构建 arm64 / x86_64 二进制 →
+# 发布 Swift `orzmc` CLI（macOS + Linux）：tag `vX.Y.Z` → 构建各平台二进制 →
 # 校验自报版本 → 挂到 GitHub Release（全部产物到位后才可见）。
 #
 # 资产命名与 Python 侧 `asset_for()` 一致：`orzmc-macos-<arch>`，便于 `orzmc update`
@@ -148,10 +148,70 @@ jobs:
           path: ${{ matrix.asset }}
           if-no-files-found: error
 
+  # Linux 产物（决策 D14：跨平台）。用官方 `swift:6.0` 容器构建，资产命名与
+  # Python 侧 `asset_for()` 的 (os, arch) → asset 规则一致（`orzmc-linux-<arch>`）。
+  build-linux:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+            file_arch: x86-64
+            asset: orzmc-linux-x86_64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            file_arch: aarch64
+            asset: orzmc-linux-arm64
+    runs-on: ${{ matrix.runner }}
+    container: swift:6.0
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Toolchain
+        run: swift --version
+      - name: Build (release)
+        run: swift build -c release --product orzmc
+      - name: Package the binary
+        run: |
+          set -euo pipefail
+          BIN="$(swift build -c release --show-bin-path)"
+          cp "$BIN/orzmc" "${{ matrix.asset }}"
+          chmod +x "${{ matrix.asset }}"
+          ./"${{ matrix.asset }}" version
+      - name: Assert architecture
+        run: |
+          set -euo pipefail
+          info="$(file -b "${{ matrix.asset }}")"
+          echo "$info"
+          case "$info" in
+            *"${{ matrix.file_arch }}"*) echo "ok: ${{ matrix.arch }}" ;;
+            *) echo "::error::expected ${{ matrix.arch }}, got: $info"; exit 1 ;;
+          esac
+      - name: Assert the binary reports the released version
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          out="$(./${{ matrix.asset }} version)"
+          case "$out" in
+            "orzmc ${TAG#v}"*) echo "ok: $out" ;;
+            *) echo "::error::binary reports '$out', expected 'orzmc ${TAG#v}'"; exit 1 ;;
+          esac
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
   # 所有平台产物齐了才建/发布 Release：半成品不会出现在 releases/latest 上，
   # 一键安装与 `orzmc update` 也就不会提前把新版本推给用户。
   publish:
-    needs: build
+    needs: [build, build-linux]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -164,7 +224,7 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum orzmc-macos-* > SHA256SUMS
+          sha256sum orzmc-macos-* orzmc-linux-* > SHA256SUMS
           cat SHA256SUMS
       - name: Create or update the GitHub Release
         env:

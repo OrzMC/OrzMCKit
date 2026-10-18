@@ -48,6 +48,37 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
+  # Linux 构建与验收(决策 D14:Swift CLI 收敛为唯一跨平台实现)。
+  # 用官方 `swift:6.0` 容器与 `// swift-tools-version:6.0` 对齐;与 macOS job 同门禁:
+  # 编译 + 单测 + CLI 行为验收(`scripts/accept_cli.py`,真实进程)。
+  linux:
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Runtime tools
+        # `zip` 是备份功能的运行时依赖(极简镜像不自带);`python3` 供验收脚本使用。
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq zip python3 >/dev/null
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+      - name: CLI acceptance
+        run: |
+          set -euo pipefail
+          swift build -c release --product orzmc
+          python3 scripts/accept_cli.py --cli .build/release/orzmc
+
   # CLI 行为验收(父仓库 `docs/spec/conformance.md` §12):帮助 / 信封 / 退出码 /
   # 取消语义 / 补全落点 / MCP,全部走**真实进程**。与 Python 侧
   # `OrzPythonMC/scripts/accept_cli.py` 同分组、同语义(都用标库,断言按规范写)。
