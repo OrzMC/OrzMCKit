@@ -42,6 +42,23 @@ jobs:
             swift build 2>&1 | tee /tmp/build.log
           fi
 
+      - name: Unit tests
+        if: always()
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee /tmp/test.log | tail -40
+
+      - name: CLI acceptance (real process)
+        if: always()
+        shell: bash
+        continue-on-error: true
+        run: |
+          apt-get update -qq && apt-get install -y -qq python3 >/dev/null
+          swift build -c release --product orzmc >/dev/null 2>&1
+          python3 scripts/accept_cli.py --cli .build/release/orzmc 2>&1 | tail -30
+
       - name: Error summary
         if: always()
         shell: bash
@@ -55,5 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-build-log
-          path: /tmp/build.log
+          path: |
+            /tmp/build.log
+            /tmp/test.log
           if-no-files-found: ignore
