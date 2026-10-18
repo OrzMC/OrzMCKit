@@ -1,0 +1,53 @@
+name: Linux Probe
+
+# 一次性探针（决策 D8：Swift CLI 收敛为唯一跨平台实现，先摸清 Linux 缺口）。
+# 只手动触发；跑通后并入 ci.yml，本文件即删。
+on:
+  workflow_dispatch:
+    inputs:
+      product:
+        description: "只构建某产品（留空=全部 target）"
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    # 官方 Swift 6 镜像与 `// swift-tools-version:6.0` 对齐；标准 hosted runner。
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version && uname -a
+
+      - name: Build
+        shell: bash
+        run: |
+          set -o pipefail
+          if [ -n "${{ inputs.product }}" ]; then
+            swift build --product "${{ inputs.product }}" 2>&1 | tee /tmp/build.log
+          else
+            swift build 2>&1 | tee /tmp/build.log
+          fi
+
+      - name: Error summary
+        if: always()
+        shell: bash
+        run: |
+          echo "==== 错误/缺失模块汇总 ===="
+          grep -nE "error:|no such module|unable to resolve|cannot find" /tmp/build.log \
+            | sed 's|/__w/[^ ]*/||' | sort -u | head -60 || echo "(无)"
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-log
+          path: /tmp/build.log
+          if-no-files-found: ignore
