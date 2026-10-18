@@ -156,7 +156,13 @@ jobs:
       - name: Smoke (runtime, 干净 PATH)
         shell: pwsh
         run: |
-          $exe = ".build\x86_64-unknown-windows-msvc\debug\orzmc.exe"
+          # 产物 = exe + 运行时 DLL（见 release.yml 的打包说明）：先按发布形态放好，再清 PATH 验证。
+          $bin = ".build\x86_64-unknown-windows-msvc\debug\orzmc.exe"
+          $runtime = (Get-ChildItem "$env:LOCALAPPDATA\Programs\Swift\Runtimes\*\usr\bin" -Directory | Select-Object -Last 1).FullName
+          New-Item -ItemType Directory -Force shipped | Out-Null
+          Copy-Item $bin shipped\
+          Copy-Item "$runtime\*.dll" shipped\
+          $exe = ".\shipped\orzmc.exe"
           # 模拟「用户机器没装 Swift」：从 PATH 里摘掉所有 Swift 目录后再跑。
           $env:Path = ($env:Path -split ';' | Where-Object { $_ -and $_ -notmatch 'Swift' }) -join ';'
           & $exe --version | Select-Object -First 1
