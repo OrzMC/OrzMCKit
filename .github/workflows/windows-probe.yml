@@ -48,6 +48,16 @@ jobs:
           swift --version
           [Environment]::OSVersion.Version
 
+      # SwiftPM 的构建插件（OpenAPI 生成器）需要在 .build/plugins/debug 建符号链接；
+      # Windows 默认不允许普通用户建符号链接，会退化成
+      # "warning: unable to create symbolic link … A file with the same name already exists"
+      # 然后报 "missing inputs: …GeneratedSources/Server.swift"。开启开发者模式即可。
+      - name: Enable Developer Mode (symlinks for build-tool plugins)
+        shell: pwsh
+        run: |
+          New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" `
+            -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
+
       - name: Build (orzmc)
         shell: pwsh
         continue-on-error: true
