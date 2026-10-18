@@ -165,11 +165,10 @@ jobs:
           if ($completion -notmatch "function _orzmc\(\)") { throw "补全函数名不是 _orzmc" }
           Write-Output "ok: smoke passed"
 
-      # 单测在 Windows 上先以「只记录」方式跑:路径/临时目录相关断言需逐个过一遍,
-      # 变成硬门禁前先看几轮结果(见 docs/windows-port.md 的 W6 备注)。
-      - name: Test (non-blocking)
+      # 单测在 Windows 上已是硬门禁(2026-10-18 起:98 tests 全过;
+      # 之前 `defaultRoot()` 断言写死了 `/minecraft`,已按平台修正)。
+      - name: Test
         shell: pwsh
-        continue-on-error: true
         run: swift test 2>&1 | Tee-Object -FilePath test.log
 
       - name: Upload logs
