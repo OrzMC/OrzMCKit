@@ -149,6 +149,30 @@ import Testing
         #expect(SelfUpdate.normalize("0.1.0") == "v0.1.0")
         #expect(SelfUpdate.normalize("v0.1.0") == "v0.1.0")
     }
+
+    /// 资产名必须与 `release.yml` / Python `asset_for` 一致（三平台形状）。
+    @Test func assetNames() {
+        #expect(SelfUpdate.asset(osName: "macos", arch: "arm64") == "orzmc-macos-arm64")
+        #expect(SelfUpdate.asset(osName: "linux", arch: "x86_64") == "orzmc-linux-x86_64")
+        #expect(SelfUpdate.asset(osName: "windows", arch: "x86_64") == "orzmc-windows-x86_64.exe")
+    }
+
+    @Test func platformTags() {
+        #expect(SelfUpdate.platformTag(osName: "linux", arch: "arm64") == "linux-arm64")
+        #expect(SelfUpdate.platformTag(osName: "windows", arch: "x86_64") == "windows-x86_64")
+    }
+
+    /// 可执行文件魔数按平台区分（Mach-O / ELF / PE）。
+    @Test func allowedMagicsPerPlatform() {
+        let elf = Data([0x7F, 0x45, 0x4C, 0x46])
+        let pe = Data([0x4D, 0x5A])
+        let machO = Data([0xCF, 0xFA, 0xED, 0xFE])
+        #expect(SelfUpdate.allowedMagics(osName: "linux").contains(elf))
+        #expect(!SelfUpdate.allowedMagics(osName: "linux").contains(pe))
+        #expect(SelfUpdate.allowedMagics(osName: "windows").contains(pe))
+        #expect(!SelfUpdate.allowedMagics(osName: "windows").contains(machO))
+        #expect(SelfUpdate.allowedMagics(osName: "macos").contains(machO))
+    }
 }
 
 /// 全局选项预解析（规范 §3）：只消费子命令之前的全局选项。

@@ -28,22 +28,37 @@ enum SelfUpdate {
         let available: Bool
     }
 
-    /// 当前进程架构对应的资产名（与 `release.yml` / Python `asset_for` 一致）。
-    static func asset() -> String {
-        #if arch(arm64)
-        return "orzmc-macos-arm64"
+    /// 当前进程所在平台名（`macos` / `linux` / `windows`）。
+    static var osName: String {
+        #if os(Windows)
+        return "windows"
+        #elseif os(Linux)
+        return "linux"
         #else
-        return "orzmc-macos-x86_64"
+        return "macos"
         #endif
     }
 
-    /// 安装记录里的 `platform` 字段（对齐 Python `platform_tag`）。
-    static func platformTag() -> String {
+    /// 当前进程架构名（与发布资产一致：`arm64` / `x86_64`）。
+    static var archName: String {
         #if arch(arm64)
-        return "macos-arm64"
+        return "arm64"
         #else
-        return "macos-x86_64"
+        return "x86_64"
         #endif
+    }
+
+    /// 资产名（与 `release.yml` / Python `asset_for` 一致）：`orzmc-<os>-<arch>[.exe]`。
+    ///
+    /// 平台/架构做成参数是为了能在任意平台上单测三种形状。
+    static func asset(osName: String = Self.osName, arch: String = Self.archName) -> String {
+        let suffix = osName == "windows" ? ".exe" : ""
+        return "orzmc-\(osName)-\(arch)\(suffix)"
+    }
+
+    /// 安装记录里的 `platform` 字段（对齐 Python `platform_tag`）：`<os>-<arch>`。
+    static func platformTag(osName: String = Self.osName, arch: String = Self.archName) -> String {
+        "\(osName)-\(arch)"
     }
 
     static func current() -> String { "v\(OrzMCVersion.current)" }
@@ -157,7 +172,9 @@ enum SelfUpdate {
             }
 
             try verifyExecutable(staging)
+            #if !os(Windows)
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: staging)
+            #endif
         } catch {
             // 失败的升级绝不能留下半成品（成功交接时才保留给助手重命名）。
             try? FileManager.default.removeItem(atPath: staging)
@@ -172,16 +189,33 @@ enum SelfUpdate {
         Data([0xCA, 0xFE, 0xBA, 0xBE]), Data([0xBE, 0xBA, 0xFE, 0xCA]),
     ]
 
-    /// 拒绝空 / HTML / JSON 错误页：必须是 Mach-O 可执行文件（规范 §6「magic 校验」）。
-    static func verifyExecutable(_ path: String) throws {
+    /// Linux ELF 头部。
+    private static let elfMagics: [Data] = [Data([0x7F, 0x45, 0x4C, 0x46])]
+    /// Windows PE（`MZ`）。
+    private static let peMagics: [Data] = [Data([0x4D, 0x5A])]
+
+    /// 该平台允许的可执行文件魔数。
+    static func allowedMagics(osName: String = Self.osName) -> [Data] {
+        switch osName {
+        case "windows": return peMagics
+        case "linux": return elfMagics
+        default: return machOMagics
+        }
+    }
+
+    /// 拒绝空 / HTML / JSON 错误页：必须是对应平台的可执行文件（规范 §6「magic 校验」）。
+    static func verifyExecutable(_ path: String, osName: String = Self.osName) throws {
         guard let handle = FileHandle(forReadingAtPath: path) else {
             throw CLIError("无法读取下载的二进制", code: "E_RUNTIME")
         }
         defer { try? handle.close() }
         let head = handle.readData(ofLength: 4)
         guard !head.isEmpty else { throw CLIError("下载的二进制为空,已中止升级", code: "E_VERIFY") }
-        guard machOMagics.contains(head) else {
-            throw CLIError("下载内容不是有效的 Mach-O 可执行文件(可能是错误页),已中止升级", code: "E_VERIFY")
+        guard allowedMagics(osName: osName).contains(head) else {
+            throw CLIError(
+                "下载内容不是有效的可执行文件(\(osName);可能是错误页),已中止升级",
+                code: "E_VERIFY"
+            )
         }
     }
 
@@ -195,6 +229,12 @@ enum SelfUpdate {
         let log = (binary as NSString).deletingLastPathComponent + "/" + updateLogName
         // 每次升级都从空日志开始：上一次的 DONE 不能被误认为这一次的结果。
         try? FileManager.default.removeItem(atPath: log)
+
+        #if os(Windows)
+        // Windows 不能替换正在运行的 exe，但**可以给它改名**：
+        // 当前 exe → `<exe>.old`，再把新二进制放到原位置，下次启动即生效。
+        return try handoffOnWindows(staged: staged, binary: binary, log: log)
+        #else
         let script = "i=0; while kill -0 \"$1\" 2>/dev/null && [ \"$i\" -lt 300 ]; do sleep 0.2; i=$((i+1)); done; "
             + "if mv -f \"$2\" \"$3\"; then echo DONE >> \"$4\"; else echo FAILED >> \"$4\"; exit 1; fi"
         let process = Process()
@@ -210,7 +250,34 @@ enum SelfUpdate {
             throw CLIError("无法启动升级助手,已保留旧版本: \(error)", code: "E_RUNTIME")
         }
         return log
+        #endif
     }
+
+    #if os(Windows)
+    /// Windows 的自替换：改名旧 exe → 放入新 exe → 写日志（语义与 POSIX 助手一致）。
+    private static func handoffOnWindows(staged: String, binary: String, log: String) throws -> String {
+        let retired = binary + ".old"
+        let fm = FileManager.default
+        // 上一次留下的 `.old` 先清掉（此时不会再有进程占用它）。
+        try? fm.removeItem(atPath: retired)
+        do {
+            if fm.fileExists(atPath: binary) {
+                try fm.moveItem(atPath: binary, toPath: retired)
+            }
+            try fm.moveItem(atPath: staged, toPath: binary)
+            try? "DONE\n".write(toFile: log, atomically: true, encoding: .utf8)
+        } catch {
+            // 回滚：把旧 exe 放回去，别让用户既没新版也没旧版。
+            if !fm.fileExists(atPath: binary), fm.fileExists(atPath: retired) {
+                try? fm.moveItem(atPath: retired, toPath: binary)
+            }
+            try? fm.removeItem(atPath: staged)
+            try? "FAILED\n".write(toFile: log, atomically: true, encoding: .utf8)
+            throw CLIError("替换二进制失败,已回滚到旧版本: \(error)", code: "E_RUNTIME")
+        }
+        return log
+    }
+    #endif
 
     /// 升级后回写安装记录（`version` / `platform` / `source`）。
     ///
