@@ -154,7 +154,7 @@ import Testing
     @Test func assetNames() {
         #expect(SelfUpdate.asset(osName: "macos", arch: "arm64") == "orzmc-macos-arm64")
         #expect(SelfUpdate.asset(osName: "linux", arch: "x86_64") == "orzmc-linux-x86_64")
-        #expect(SelfUpdate.asset(osName: "windows", arch: "x86_64") == "orzmc-windows-x86_64.exe")
+        #expect(SelfUpdate.asset(osName: "windows", arch: "x86_64") == "orzmc-windows-x86_64.zip")
     }
 
     @Test func platformTags() {

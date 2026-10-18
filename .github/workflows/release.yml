@@ -248,20 +248,34 @@ jobs:
         run: |
           # 静态链接 Swift 运行时：用户机器通常没装 Swift，动态链接会 STATUS_DLL_NOT_FOUND。
           swift build -c release --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file
-      - name: Package the binary
+      - name: Package the binary + Swift runtime DLLs
         shell: pwsh
         run: |
+          # Windows 的 Swift 程序运行时要 DLL（swiftCore/Foundation/swiftCRT/…），
+          # `--static-swift-stdlib` 并不能把它们静态链进去（`dumpbin /dependents` 实测仍列出）。
+          # 因此资产是 zip：exe + 运行时 DLL；install.ps1 解压到安装目录。
           $bin = (swift build -c release --show-bin-path)
-          Copy-Item "$bin\orzmc.exe" "${{ matrix.asset }}"
-          # 用「没有 Swift 的 PATH」验证产物自包含（真机曾出现 0xC0000135 = DLL 找不到）。
+          $runtime = (Get-ChildItem "$env:LOCALAPPDATA\Programs\Swift\Runtimes\*\usr\bin" -Directory | Select-Object -Last 1).FullName
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item "$bin\orzmc.exe" dist\
+          Copy-Item "$runtime\*.dll" dist\
+          if (Test-Path ${{ matrix.asset }}) { Remove-Item -Force ${{ matrix.asset }} }
+          Compress-Archive -Path "dist\*" -DestinationPath "${{ matrix.asset }}" -Force
+          Write-Output ("zip: " + ((Get-Item "${{ matrix.asset }}").Length / 1MB) + " MB")
+
+      - name: Assert the packaged binary runs on a clean PATH
+        shell: pwsh
+        run: |
+          # 模拟「用户机器没装 Swift」：解压到临时目录 + 摘掉 PATH 里的 Swift 目录后再跑。
+          Expand-Archive -Path "${{ matrix.asset }}" -DestinationPath verify -Force
           $env:Path = ($env:Path -split ';' | Where-Object { $_ -and $_ -notmatch 'Swift' }) -join ';'
-          & ".\${{ matrix.asset }}" --version | Select-Object -First 1
+          & ".\verify\orzmc.exe" --version | Select-Object -First 1
       - name: Assert the binary reports the released version
         shell: pwsh
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          $out = (& ".\${{ matrix.asset }}" --version | Select-Object -First 1)
+          $out = (& ".\verify\orzmc.exe" --version | Select-Object -First 1)
           $want = "orzmc $($env:TAG.TrimStart('v'))"
           if (-not $out.StartsWith($want)) { throw "binary reports '$out', expected '$want'" }
           Write-Output "ok: $out"

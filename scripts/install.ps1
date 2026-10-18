@@ -74,17 +74,15 @@ function Invoke-Uninstall {
     $binary = Join-Path $programs "$script:Name.exe"
     $stateDir = Join-Path $env:LOCALAPPDATA 'orzmc'
 
-    if (Test-Path $binary) {
-        Remove-Item -Force $binary
-        Write-Step "已删除 $binary"
+    if (Test-Path $programs -PathType Container) {
+        Remove-Item -Recurse -Force $programs
+        Write-Step "已删除 $programs（含运行时 DLL）"
     } else {
-        Write-Step "未找到 $binary（可能已卸载）"
+        Write-Step "未找到 $programs（可能已卸载）"
     }
     Remove-UserPath $programs
-    if (Test-Path -Path $programs -PathType Container) {
-        if (-not (Get-ChildItem -Force $programs | Select-Object -First 1)) {
-            Remove-Item -Force $programs
-        }
+    if (Test-Path $programs -PathType Container) {
+        Remove-Item -Recurse -Force $programs
     }
     $manifest = Join-Path $stateDir 'install.conf'
     if (Test-Path $manifest) {
@@ -123,7 +121,9 @@ if ($arch -eq 'x86') { throw '暂不支持 32 位 Windows（请用 x64 或 arm64
 
 $installDir = if ($arguments['dir']) { $arguments['dir'] } else { Join-Path $env:LOCALAPPDATA 'Programs\orzmc' }
 $binary = Join-Path $installDir "$script:Name.exe"
-$asset = "orzmc-windows-$arch.exe"
+# Windows 资产是 zip：Swift 运行时 DLL（swiftCore/Foundation/swiftCRT/…）必须随包分发，
+# 单 exe 在没有装 Swift 的机器上会直接 0xC0000135（DLL not found）。
+$asset = "orzmc-windows-$arch.zip"
 
 $version = $arguments['version']
 if ($version) {
@@ -160,15 +160,25 @@ try {
         }
     }
 
-    # 拒绝 HTML/JSON 错误页：必须是 PE 可执行文件（MZ）。
-    $bytes = [IO.File]::ReadAllBytes($payload)[0..1]
-    if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) {
-        throw '下载内容不是有效的 Windows 可执行文件（可能命中错误页）'
+    # 拒绝 HTML/JSON 错误页：zip 的魔数必须以 `PK` 开头。
+    $magic = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($payload)[0..1])
+    if ($magic -ne 'PK') {
+        throw '下载内容不是有效的 zip（可能命中错误页）'
+    }
+
+    $expandDir = Join-Path $temp 'expand'
+    Expand-Archive -Path $payload -DestinationPath $expandDir -Force
+    $expandedExe = Join-Path $expandDir "$script:Name.exe"
+    if (-not (Test-Path $expandedExe)) { throw '压缩包里没有 orzmc.exe' }
+    # 再确认一次：解出来的真身是 PE 可执行文件（MZ）。
+    $head = [IO.File]::ReadAllBytes($expandedExe)[0..1]
+    if ($head[0] -ne 0x4D -or $head[1] -ne 0x5A) {
+        throw '压缩包里的 orzmc.exe 不是有效的 Windows 可执行文件'
     }
 
     New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-    Copy-Item -Force $payload $binary
-    Write-Step "已安装: $binary"
+    Copy-Item -Force -Recurse (Join-Path $expandDir '*') $installDir
+    Write-Step "已安装到: $installDir（含运行时 DLL）"
 } finally {
     Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue
 }

@@ -5,6 +5,7 @@ import Foundation
 import FoundationNetworking
 #endif
 import Game
+import JokerKits
 
 /// 自升级（规范 `docs/spec/install-update.md` §6）。
 ///
@@ -48,13 +49,20 @@ enum SelfUpdate {
         #endif
     }
 
-    /// 资产名（与 `release.yml` / Python `asset_for` 一致）：`orzmc-<os>-<arch>[.exe]`。
+    /// 资产名（与 `release.yml` 一致）：\`orzmc-<os>-<arch>\`，**Windows 是 \`.zip\`**。
+    ///
+    /// Windows 的 Swift 程序运行时要一堆 DLL（\`swiftCore.dll\`/\`Foundation.dll\`/\`swiftCRT.dll\`…）。
+    /// \`--static-swift-stdlib\` **并不能**把它们静态链进去（实测 \`dumpbin /dependents\` 仍列出它们，
+    /// 干净机器上直接 \`0xC0000135 = DLL not found\`），所以 Windows 资产 = exe + DLL 的压缩包。
     ///
     /// 平台/架构做成参数是为了能在任意平台上单测三种形状。
     static func asset(osName: String = Self.osName, arch: String = Self.archName) -> String {
-        let suffix = osName == "windows" ? ".exe" : ""
+        let suffix = osName == "windows" ? ".zip" : ""
         return "orzmc-\(osName)-\(arch)\(suffix)"
     }
+
+    /// Windows 的资产是压缩包：下载后要先解出 exe。
+    static var assetIsArchive: Bool { osName == "windows" }
 
     /// 安装记录里的 `platform` 字段（对齐 Python `platform_tag`）：`<os>-<arch>`。
     static func platformTag(osName: String = Self.osName, arch: String = Self.archName) -> String {
@@ -163,6 +171,36 @@ enum SelfUpdate {
                     throw CLIError("本地文件不存在: \(local)", code: "E_USAGE")
                 }
                 try FileManager.default.copyItem(atPath: local, toPath: staging)
+            } else if Self.assetIsArchive {
+                guard let urlString = target.url else {
+                    throw CLIError("没有可下载的版本", code: "E_RUNTIME")
+                }
+                let (data, _) = try await get(urlString)
+                let archive = installDir + "/" + stagingName + ".zip"
+                try? FileManager.default.removeItem(atPath: archive)
+                try data.write(to: URL(fileURLWithPath: archive))
+                defer { try? FileManager.default.removeItem(atPath: archive) }
+                // 从压缩包里取出 exe 到暂存位置（Windows 用内置 tar）。
+                let extractDir = installDir + "/" + stagingName + ".dir"
+                try? FileManager.default.removeItem(atPath: extractDir)
+                try FileManager.default.createDirectory(atPath: extractDir, withIntermediateDirectories: true)
+                guard let unzip = PlatformTools.unzipCommand(
+                    archive: archive,
+                    patterns: ["orzmc.exe"],
+                    destination: extractDir
+                ) else {
+                    throw CLIError("系统缺少解压工具(Windows 自带 tar)", code: "E_UNSUPPORTED")
+                }
+                // 显式标注类型：`run` 有 `-> String` / `-> Process` / async `-> Bool` 三个重载，
+                // 在 async 上下文里 `try run(...)` 会选中 Bool 那个。
+                let extractOutput: String = try Shell.run(path: unzip.path, args: unzip.args)
+                _ = extractOutput
+                let extracted = extractDir + "/orzmc.exe"
+                guard FileManager.default.fileExists(atPath: extracted) else {
+                    throw CLIError("压缩包里没有 orzmc.exe,已中止升级", code: "E_VERIFY")
+                }
+                try FileManager.default.copyItem(atPath: extracted, toPath: staging)
+                try? FileManager.default.removeItem(atPath: extractDir)
             } else {
                 guard let urlString = target.url else {
                     throw CLIError("没有可下载的版本", code: "E_RUNTIME")
