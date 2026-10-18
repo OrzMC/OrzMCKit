@@ -1,0 +1,75 @@
+name: Windows Probe
+
+# 一次性探针（D14 / Phase 6.5）：先摸清 Swift `orzmc` 到 Windows 的真实缺口——
+# 「差几条 #if os(Windows)」还是「ConsoleKit 之类根本编译不了」，直接决定 6.5 的代价。
+# 跑通后并入 ci.yml，本文件即删。
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/windows-probe.yml"
+      - "Sources/**"
+      - "Package.swift"
+      - "Package.resolved"
+  workflow_dispatch:
+    inputs:
+      swift-version:
+        description: "Swift 版本分支（如 swift-6.0-release）"
+        required: false
+        default: "swift-6.0-release"
+      swift-build:
+        description: "Swift 构建号（如 6.0-RELEASE）"
+        required: false
+        default: "6.0-RELEASE"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      # windows-latest 不自带 Swift；这是 Windows 上唯一可靠的安装方式。
+      - name: Install Swift
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: ${{ inputs.swift-version || 'swift-6.0-release' }}
+          swift-build: ${{ inputs.swift-build || '6.0-RELEASE' }}
+
+      - name: Toolchain
+        shell: pwsh
+        run: |
+          swift --version
+          [Environment]::OSVersion.Version
+
+      - name: Build (orzmc)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
+            Tee-Object -FilePath build.log
+
+      - name: Error summary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Output "==== 错误/缺失模块汇总 ===="
+          if (Test-Path build.log) {
+            Select-String -Path build.log -Pattern "error:", "no such module", "cannot find", "unable to resolve" |
+              ForEach-Object { $_.Line.Trim() } |
+              Sort-Object -Unique |
+              Select-Object -First 60
+          } else {
+            Write-Output "(没有 build.log)"
+          }
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-log
+          path: build.log
+          if-no-files-found: ignore
