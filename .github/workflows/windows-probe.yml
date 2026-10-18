@@ -38,6 +38,9 @@ jobs:
         with:
           swift-version: ${{ inputs.swift-version || 'swift-6.0-release' }}
           swift-build: ${{ inputs.swift-build || '6.0-RELEASE' }}
+          # Windows 上 SDK 的 module map 与工具链版本常常不匹配（会让依赖的 Package.swift
+          # 都编译失败，报 "Invalid manifest … while building module 'ucrt'"）。这个开关会修它。
+          update-sdk-modules: true
 
       - name: Toolchain
         shell: pwsh
