@@ -1,6 +1,6 @@
 name: Release
 
-# 发布 Swift `orzmc` CLI（macOS + Linux）：tag `vX.Y.Z` → 构建各平台二进制 →
+# 发布 Swift `orzmc` CLI（macOS + Linux + Windows）：tag `vX.Y.Z` → 构建各平台二进制 →
 # 校验自报版本 → 挂到 GitHub Release（全部产物到位后才可见）。
 #
 # 资产命名与 Python 侧 `asset_for()` 一致：`orzmc-macos-<arch>`，便于 `orzmc update`
@@ -216,6 +216,58 @@ jobs:
           path: ${{ matrix.asset }}
           if-no-files-found: error
 
+  # Windows 产物（D14 Phase 6.5）。前提同 `ci.yml` 的 `windows` job：
+  # `windows-2022` + Swift 6.2 + `update-sdk-modules` + 开发者模式（详见 docs/windows-port.md）。
+  build-windows:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            asset: orzmc-windows-x86_64.exe
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Install Swift
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.2-release
+          swift-build: 6.2-RELEASE
+          update-sdk-modules: true
+      - name: Enable Developer Mode (symlinks for build-tool plugins)
+        shell: pwsh
+        run: |
+          New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" `
+            -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
+      - name: Build (release)
+        shell: pwsh
+        run: swift build -c release --product orzmc --only-use-versions-from-resolved-file
+      - name: Package the binary
+        shell: pwsh
+        run: |
+          $bin = (swift build -c release --show-bin-path)
+          Copy-Item "$bin\orzmc.exe" "${{ matrix.asset }}"
+          & ".\${{ matrix.asset }}" --version | Select-Object -First 1
+      - name: Assert the binary reports the released version
+        shell: pwsh
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          $out = (& ".\${{ matrix.asset }}" --version | Select-Object -First 1)
+          $want = "orzmc $($env:TAG.TrimStart('v'))"
+          if (-not $out.StartsWith($want)) { throw "binary reports '$out', expected '$want'" }
+          Write-Output "ok: $out"
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orzmc-windows-x86_64
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
   # 所有平台产物齐了才建/发布 Release：半成品不会出现在 releases/latest 上，
   # 一键安装与 `orzmc update` 也就不会提前把新版本推给用户。
   # 发布后验收（D14.1 第 1/4 条）：把**用户真正下载到的** Linux 资产拉下来，
@@ -282,7 +334,7 @@ jobs:
           echo "ok: install → verify → uninstall 全链路通过"
 
   publish:
-    needs: [build, build-linux]
+    needs: [build, build-linux, build-windows]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -295,7 +347,7 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum orzmc-macos-* orzmc-linux-* > SHA256SUMS
+          sha256sum orzmc-macos-* orzmc-linux-* orzmc-windows-* > SHA256SUMS
           cat SHA256SUMS
       - name: Create or update the GitHub Release
         env:

@@ -112,6 +112,76 @@ jobs:
             /root/.cache/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
+  # Windows 构建与冒烟(D14 Phase 6.5 / docs/windows-port.md)。
+  # **只在 main 与手动触发时跑**:一次 8–11 分钟,挂在每个 PR 上会拖慢反馈;
+  # 平台缺口由本 job 与 `linux`/macOS 三件套共同兜住。
+  #
+  # 三条硬前提(每一条都被实测证实,缺一必挂):
+  #   1. `windows-2022`(windows-2025 的 VS18 STL 要求 Clang 20+,当前工具链不满足);
+  #   2. Swift **6.2**(6.0 的 SwiftPM 在 Windows 上处理构建插件输出有缺陷);
+  #   3. `update-sdk-modules: true` + 开发者模式(SwiftPM 需要建符号链接)。
+  windows:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.2-release
+          swift-build: 6.2-RELEASE
+          update-sdk-modules: true
+
+      - name: Enable Developer Mode (symlinks for build-tool plugins)
+        shell: pwsh
+        run: |
+          New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" `
+            -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
+
+      - name: Toolchain
+        shell: pwsh
+        run: swift --version
+
+      - name: Build (orzmc)
+        shell: pwsh
+        run: |
+          swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
+            Tee-Object -FilePath build.log
+
+      - name: Smoke (runtime)
+        shell: pwsh
+        run: |
+          $exe = ".build\x86_64-unknown-windows-msvc\debug\orzmc.exe"
+          & $exe --version | Select-Object -First 1
+          $caps = & $exe --json capabilities | ConvertFrom-Json
+          if ($caps.ok -ne $true) { throw "capabilities 信封不对" }
+          if (($caps.data.commands | Measure-Object).Count -lt 13) { throw "capabilities 命令不足" }
+          $list = & $exe --json list | ConvertFrom-Json
+          if ($list.ok -ne $true) { throw "list 信封不对" }
+          # 规范 §4.5:补全脚本命令名必须是 orzmc(曾渲染成完整 .exe 路径)
+          $completion = (& $exe completion bash) -join "`n"
+          if ($completion -notmatch "function _orzmc\(\)") { throw "补全函数名不是 _orzmc" }
+          Write-Output "ok: smoke passed"
+
+      # 单测在 Windows 上先以「只记录」方式跑:路径/临时目录相关断言需逐个过一遍,
+      # 变成硬门禁前先看几轮结果(见 docs/windows-port.md 的 W6 备注)。
+      - name: Test (non-blocking)
+        shell: pwsh
+        continue-on-error: true
+        run: swift test 2>&1 | Tee-Object -FilePath test.log
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-logs
+          path: |
+            build.log
+            test.log
+          if-no-files-found: ignore
+
   # CLI 行为验收(父仓库 `docs/spec/conformance.md` §12):帮助 / 信封 / 退出码 /
   # 取消语义 / 补全落点 / MCP,全部走**真实进程**。与 Python 侧
   # `OrzPythonMC/scripts/accept_cli.py` 同分组、同语义(都用标库,断言按规范写)。
