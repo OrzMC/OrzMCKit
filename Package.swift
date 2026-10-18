@@ -33,6 +33,9 @@ let package = Package(
                 "Fabric",
                 .product(name: "CacheKit", package: "OrzSwiftKit"),
                 .product(name: "TransferKit", package: "OrzSwiftKit"),
+                .product(name: "Crypto",
+                         package: "swift-crypto",
+                         condition: .when(platforms: [.linux])),
             ]
         ),
         // MARK: Conformance adapter (drives parent docs/spec fixtures)

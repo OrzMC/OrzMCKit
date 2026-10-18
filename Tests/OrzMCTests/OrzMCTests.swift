@@ -1,6 +1,11 @@
 import CacheKit
 import ConsoleKit
+// Apple 平台用 CryptoKit；其它平台用 swift-crypto（决策 D14：跨平台）。
+#if canImport(CryptoKit)
 import CryptoKit
+#elseif canImport(Crypto)
+import Crypto
+#endif
 import Fabric
 import Foundation
 import MojangAPI
