@@ -3,6 +3,15 @@
 ## [0.15.0](https://github.com/OrzMC/OrzMCKit/compare/v0.14.0...v0.15.0) (2026-10-18)
 
 
+### ⚠️ 升级须知（Windows 首次可用 / 资产是 zip）
+
+- **Windows 现在有官方产物**：`orzmc-windows-x86_64.zip`（exe + Swift 运行时 DLL，约 33 MB）。
+  单 exe 在没装 Swift 的机器上会 `STATUS_DLL_NOT_FOUND`；请用安装器整包安装：
+  `irm https://raw.githubusercontent.com/OrzMC/OrzMCKit/main/scripts/install.ps1 | iex`。
+- **PowerShell 补全按规范 F6 不落盘**：把 `orzmc completion powershell` 追加到 `$PROFILE`。
+- `orzmc app …` 是 macOS 专属；Windows/Linux 上返回 `E_UNSUPPORTED`。
+- Linux / macOS 升级方式不变（`orzmc update --yes` 或重跑一键安装器）。
+
 ### Features
 
 * **dx:** 本机 Swift 6 快速迭代脚本 + 秒级 portability 快车道 ([#62](https://github.com/OrzMC/OrzMCKit/issues/62)) ([260b845](https://github.com/OrzMC/OrzMCKit/commit/260b8454fde8405462cc9b4f7fd408567c2ba099))
