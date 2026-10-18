@@ -1,6 +1,11 @@
 import CacheKit
 import ConsoleKit
+// Apple 平台用 CryptoKit；其它平台用 swift-crypto（决策 D14：跨平台）。
+#if canImport(CryptoKit)
 import CryptoKit
+#elseif canImport(Crypto)
+import Crypto
+#endif
 import Fabric
 import Foundation
 import MojangAPI
@@ -427,7 +432,9 @@ import Testing
 }
 
 @Suite struct BackupTests {
-    @Test func zipsWorldDir() throws {
+    // 备份依赖系统 `zip`；极简 Linux 镜像可能没有（CI 已装），缺失则跳过而不是假失败。
+    @Test(.enabled(if: PlatformTools.zip() != nil))
+    func zipsWorldDir() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("orzmc-backup-\(UUID().uuidString)", isDirectory: true)
         let fm = FileManager.default

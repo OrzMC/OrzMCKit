@@ -23,6 +23,7 @@ struct AppCommand: AsyncCommand {
     var help: String = "跨面:安装 / 打开 / 卸载 GUI 应用"
 
     func run(using context: CommandContext, signature: Signature) async throws {
+        #if os(macOS)
         let action = signature.action.lowercased()
         let channel = (signature.channel ?? "release").lowercased()
         guard channel == "release" || channel == "appstore" else {
@@ -41,8 +42,14 @@ struct AppCommand: AsyncCommand {
         default:
             throw CLIError("未知操作: \(action)(可选 install|open|uninstall|status)", code: "E_USAGE")
         }
+        #else
+        // 规范 §8：跨面安装的是 macOS `.app`；其它平台显式不支持（D8 跨平台时的诚实边界）。
+        _ = signature
+        throw CLIError("当前平台不支持 orzmc app(仅 macOS);请直接从 Release 下载", code: "E_UNSUPPORTED")
+        #endif
     }
 
+    #if os(macOS)
     private func status(_ context: CommandContext) throws {
         let installed = AppInstaller.isInstalled()
         let data: [String: Any] = [
@@ -109,4 +116,5 @@ struct AppCommand: AsyncCommand {
     private func emit(_ context: CommandContext, data: [String: Any]) {
         if options.json { JSONOutput.success(command: "app", data: data) }
     }
+    #endif
 }

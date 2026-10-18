@@ -1,5 +1,10 @@
 import CacheKit
 import Foundation
+
+// Linux/Windows 把 URLSession/URLRequest 放在 FoundationNetworking（决策 D8：跨平台）。
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import JokerKits
 import TransferKit
 
@@ -110,9 +115,12 @@ public enum ForgeMeta {
         )
     }
 
-    /// 读取安装器 jar 内嵌的 `version.json`（`unzip -p`，与 `Client+Music` 同一平台假设）。
+    /// 读取安装器 jar 内嵌的 `version.json`（`unzip -p`）；`unzip` 路径由 `PlatformTools` 解析（D8）。
     static func extractVersionPlan(_ installerPath: String) throws -> VersionPlan {
-        let json = try Shell.run(path: "/usr/bin/unzip", args: ["-p", installerPath, "version.json"])
+        guard let unzip = PlatformTools.unzip() else {
+            throw ForgeMetaError.extractFailed(installerPath)
+        }
+        let json = try Shell.run(path: unzip, args: ["-p", installerPath, "version.json"])
         guard let data = json.data(using: .utf8), !data.isEmpty else {
             throw ForgeMetaError.extractFailed(installerPath)
         }

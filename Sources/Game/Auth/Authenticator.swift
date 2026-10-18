@@ -1,5 +1,10 @@
 import Foundation
 
+// Linux/Windows 把 URLSession/URLRequest 放在 FoundationNetworking（决策 D8：跨平台）。
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 /// 认证失败，携带规范错误码（`E_AUTH*`，见 `docs/spec/auth.md` §7）。
 public struct AuthError: Error, Sendable, Equatable, CustomStringConvertible {
     public let code: String

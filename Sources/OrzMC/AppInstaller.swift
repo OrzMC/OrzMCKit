@@ -1,9 +1,18 @@
 import Foundation
 
+// Linux/Windows 把 URLSession/URLRequest 放在 FoundationNetworking（决策 D8：跨平台）。
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 /// GUI 应用（`OrzMCApp`）的跨面安装（规范 `docs/spec/install-update.md` §8）。
 ///
 /// 渠道：`release`（GitHub Release 的 `.zip` 产物，解压到 `~/Applications`）。
 /// App Store 渠道在上架前显式不支持。
+///
+/// 平台：`.app` / `ditto` / `open` 是 macOS 概念，本文件整体只在 macOS 编译（D8 跨平台）。
+/// 非 macOS 上 `orzmc app` 由 `AppCommand` 直接给 `E_UNSUPPORTED`。
+#if os(macOS)
 enum AppInstaller {
     static let repo = "OrzMC/OrzMCApp"
     static let appName = "OrzMC.app"
@@ -129,3 +138,4 @@ enum AppInstaller {
         return try await URLSession.shared.data(for: request)
     }
 }
+#endif
