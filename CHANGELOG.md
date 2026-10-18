@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/OrzMC/OrzMCKit/compare/v0.13.0...v0.14.0) (2026-10-18)
+
+
+### Features
+
+* **linux:** Swift CLI 跨平台第一步——Linux 编译/单测/验收全绿 + Linux 发布资产 ([#57](https://github.com/OrzMC/OrzMCKit/issues/57)) ([bbed961](https://github.com/OrzMC/OrzMCKit/commit/bbed961ac55daddc2359413a0fa7c82e5a1af1b9))
+
 ## [0.13.0](https://github.com/OrzMC/OrzMCKit/compare/v0.12.0...v0.13.0) (2026-10-17)
 
 
