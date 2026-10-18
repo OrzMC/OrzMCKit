@@ -190,11 +190,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          info="$(file -b "${{ matrix.asset }}")"
-          echo "$info"
-          case "$info" in
-            *"${{ matrix.file_arch }}"*) echo "ok: ${{ matrix.arch }}" ;;
-            *) echo "::error::expected ${{ matrix.arch }}, got: $info"; exit 1 ;;
+          # `swift:6.0` 精简镜像没有 `file`；容器里用 `uname -m` 断言「构建机架构」，
+          # 再靠下面的 `./asset version` 证明产物能在本机执行（架构不符会直接 Exec format error）。
+          machine="$(uname -m)"
+          echo "runner arch: $machine (expect ${{ matrix.file_arch }})"
+          case "$machine" in
+            "${{ matrix.file_arch }}"|"${{ matrix.arch }}") echo "ok: ${{ matrix.arch }}" ;;
+            *) echo "::error::expected ${{ matrix.arch }}, got runner $machine"; exit 1 ;;
           esac
       - name: Assert the binary reports the released version
         env:
