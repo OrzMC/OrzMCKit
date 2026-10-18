@@ -1,4 +1,9 @@
 import Foundation
+
+// Linux/Windows 把 URLSession/URLRequest 放在 FoundationNetworking（决策 D8：跨平台）。
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Game
 
 /// 自升级（规范 `docs/spec/install-update.md` §6）。

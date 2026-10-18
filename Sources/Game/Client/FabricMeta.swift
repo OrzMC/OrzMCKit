@@ -2,6 +2,11 @@ import CacheKit
 import Fabric
 import Foundation
 
+// Linux/Windows 把 URLSession/URLRequest 放在 FoundationNetworking（决策 D8：跨平台）。
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 /// Fabric 客户端附加组件解析（fabric-meta API）。
 ///
 /// 对齐 Python `orzmc.core.fabric.Fabric`：先取该 MC 版本的最新**稳定** loader，
