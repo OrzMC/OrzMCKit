@@ -3,6 +3,12 @@ name: Linux Probe
 # 一次性探针（决策 D8：Swift CLI 收敛为唯一跨平台实现，先摸清 Linux 缺口）。
 # 只手动触发；跑通后并入 ci.yml，本文件即删。
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/linux-probe.yml"
+      - "Sources/**"
+      - "Package.swift"
+      - "Package.resolved"
   workflow_dispatch:
     inputs:
       product:
