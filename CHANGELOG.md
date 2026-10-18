@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.0](https://github.com/OrzMC/OrzMCKit/compare/v0.14.0...v0.15.0) (2026-10-18)
+
+
+### Features
+
+* **dx:** 本机 Swift 6 快速迭代脚本 + 秒级 portability 快车道 ([#62](https://github.com/OrzMC/OrzMCKit/issues/62)) ([260b845](https://github.com/OrzMC/OrzMCKit/commit/260b8454fde8405462cc9b4f7fd408567c2ba099))
+* **linux:** Linux 收尾——发布链路修复 + 秒级可移植性检查 + 本地容器迭代 ([#59](https://github.com/OrzMC/OrzMCKit/issues/59)) ([3525a64](https://github.com/OrzMC/OrzMCKit/commit/3525a644ff2d8b6965befaf7139490ab18886b39))
+* **linux:** 安装器支持 Linux + 发布后自动验收(资产/安装/补全/卸载) ([#61](https://github.com/OrzMC/OrzMCKit/issues/61)) ([1242479](https://github.com/OrzMC/OrzMCKit/commit/124247927c2aad27f3cb377a509fd92b83137ac8))
+* **windows:** W3/W4/W5——自升级/解压打包/安装器按平台 ([#65](https://github.com/OrzMC/OrzMCKit/issues/65)) ([b3c33cc](https://github.com/OrzMC/OrzMCKit/commit/b3c33cc724531900157b3f60e82556769db10ae7))
+* **windows:** W6——CI 加 windows job（build+冒烟），发布出 orzmc-windows-x86_64.exe ([#64](https://github.com/OrzMC/OrzMCKit/issues/64)) ([28bf1b3](https://github.com/OrzMC/OrzMCKit/commit/28bf1b386d59bfe2e11eaf6123ce2cab090a4fb8))
+* **windows:** Windows 第一步——编译打通 + W1 补全函数名 + W2 状态目录 ([#63](https://github.com/OrzMC/OrzMCKit/issues/63)) ([b809aa2](https://github.com/OrzMC/OrzMCKit/commit/b809aa253b4e172cd7605b7b98775b2634159847))
+
 ## [0.14.0](https://github.com/OrzMC/OrzMCKit/compare/v0.13.0...v0.14.0) (2026-10-18)
 
 
