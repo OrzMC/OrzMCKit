@@ -225,7 +225,7 @@ jobs:
       matrix:
         include:
           - runner: windows-2022
-            asset: orzmc-windows-x86_64.exe
+            asset: orzmc-windows-x86_64.zip
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
