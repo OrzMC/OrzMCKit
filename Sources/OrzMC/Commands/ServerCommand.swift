@@ -89,6 +89,13 @@ struct ServerCommand: AsyncCommand {
         let debug = signature.debug || options.verbose
         let minMem = signature.minMem ?? Constants.serverMinMemDefault
         let maxMem = signature.maxMem ?? Constants.serverMaxMemDefault
+        // 规范 §5：非法内存值先报 E_USAGE，不做任何 IO。
+        if let bad = MemorySpec.firstInvalid(min: minMem, max: maxMem) {
+            throw CLIError("无效内存: \(bad) (例如 512M、2G)", code: "E_USAGE")
+        }
+        if let bad = LaunchOptionRules.firstInvalid(downloadThreads: signature.downloadThreads) {
+            throw CLIError(bad, code: "E_USAGE")
+        }
         let onlineMode = signature.onlineMode
         let forceUpgrade = signature.forceUpgrade
         let demo = signature.demo

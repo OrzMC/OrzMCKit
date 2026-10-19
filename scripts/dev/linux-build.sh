@@ -48,6 +48,7 @@ mkdir -p "$TMP_HOME"
 run_in_container() {
     $ENGINE run --rm \
         -v "$ROOT:/src" \
+        -v "$ROOT/../../scripts:/parent-scripts:ro" \
         -v "$ROOT/.build-linux:/root/.cache/org.swift.swiftpm" \
         -w /src \
         -e HOME=/root \
@@ -63,7 +64,7 @@ case "$TASK" in
         run_in_container "apt-get update -qq && apt-get install -y -qq zip python3 >/dev/null && swift test 2>&1 | tail -30"
         ;;
     accept)
-        run_in_container "apt-get update -qq && apt-get install -y -qq python3 >/dev/null && swift build -c release --product orzmc && python3 scripts/accept_cli.py --cli .build/release/orzmc"
+        run_in_container "apt-get update -qq && apt-get install -y -qq python3 >/dev/null && swift build -c release --product orzmc && python3 /parent-scripts/accept/cli.py --cli .build/release/orzmc"
         ;;
     all)
         run_in_container "apt-get update -qq && apt-get install -y -qq zip python3 >/dev/null \
@@ -71,7 +72,7 @@ case "$TASK" in
             && swift build 2>&1 | tail -20 \
             && swift test 2>&1 | tail -20 \
             && swift build -c release --product orzmc \
-            && python3 scripts/accept_cli.py --cli .build/release/orzmc"
+            && python3 /parent-scripts/accept/cli.py --cli .build/release/orzmc"
         ;;
     *)
         echo "未知任务: $TASK（可选 build|test|accept|all|lint）" >&2

@@ -128,6 +128,13 @@ struct ClientCommand: AsyncCommand {
 
         let minMem = signature.minMem ?? Constants.clientMinMemDefault
         let maxMem = signature.maxMem ?? Constants.clientMaxMemDefault
+        // 规范 §5：非法内存值先报 E_USAGE，不做任何 IO（否则 --json 下会先联网再失败）。
+        if let bad = MemorySpec.firstInvalid(min: minMem, max: maxMem) {
+            throw CLIError("无效内存: \(bad) (例如 512M、2G)", code: "E_USAGE")
+        }
+        if let bad = LaunchOptionRules.firstInvalid(downloadThreads: signature.downloadThreads) {
+            throw CLIError(bad, code: "E_USAGE")
+        }
         let jvmArgs = (signature.jvmOpts ?? "").split(separator: " ").map(String.init)
 
         // 参数收集完成

@@ -325,6 +325,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 验收脚本只有一份，在父仓库（M2）。
+      - name: Checkout parent (acceptance harness + spec)
+        uses: actions/checkout@v4
+        with:
+          repository: OrzMC/OrzMC
+          path: parent
+          sparse-checkout: |
+            docs/spec
+            scripts/accept
+
       - name: Tooling
         shell: bash
         run: |
@@ -348,7 +358,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x dist/orzmc-linux-x86_64
-          python3 scripts/accept_cli.py --cli dist/orzmc-linux-x86_64
+          python3 parent/scripts/accept/cli.py --cli dist/orzmc-linux-x86_64
 
       - name: Installer end-to-end (install → verify → uninstall)
         shell: bash
