@@ -278,14 +278,12 @@ jobs:
           New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" `
             -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
 
-      # arm64 必须把 **MSVC 环境**也切到 arm64：runner 默认是 `vcvarsall x64`，
-      # 否则链接时会报 `msvcrt.lib(...): machine type x64 conflicts with arm64`
+      # arm64 必须把 **MSVC 库**也换到 arm64：runner 默认是 x64，
+      # 否则链接时报 `msvcrt.lib(...): machine type x64 conflicts with arm64`
       # （2026-10-19 探针实测）。x64 腿不需要，保持默认。
       - name: MSVC environment (arm64)
         if: matrix.arch == 'arm64'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: arm64
+        uses: ./.github/actions/msvc-arm64
       - name: Build (release)
         shell: pwsh
         run: |
