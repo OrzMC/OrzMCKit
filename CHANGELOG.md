@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/OrzMC/OrzMCKit/compare/v0.16.0...v0.17.0) (2026-10-19)
+
+
+### Features
+
+* **m2:** 验收脚本收敛到父仓库一份 + 修共享判据抓出的 3 个真 bug ([#76](https://github.com/OrzMC/OrzMCKit/issues/76)) ([acd99d4](https://github.com/OrzMC/OrzMCKit/commit/acd99d4d15448e2a41eb161c2cab6bbfade0d064))
+
 ## [0.16.0](https://github.com/OrzMC/OrzMCKit/compare/v0.15.0...v0.16.0) (2026-10-19)
 
 
