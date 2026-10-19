@@ -48,6 +48,31 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
+  # 能力台账校验(两套 CLI 并行期,见父仓库 docs/two-cli-strategy.md):
+  # 用**本实现的 capabilities 输出**反向验证 docs/spec/parity.json 里声明的状态
+  # (标 parity 必须真有该命令,标 na 不许有),防止「台账写得好、实现悄悄漂移」。
+  ledger:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout parent (spec + ledger)
+        uses: actions/checkout@v4
+        with:
+          repository: OrzMC/OrzMC
+          path: parent
+          sparse-checkout: |
+            docs/spec
+            scripts/verify
+      - name: Build (orzmc)
+        run: swift build --only-use-versions-from-resolved-file
+      - name: Verify ledger against capabilities
+        run: |
+          set -euo pipefail
+          BIN="$(swift build --show-bin-path)"
+          "$BIN/orzmc" --json capabilities > /tmp/caps.json
+          python3 parent/scripts/verify/parity.py --swift-caps /tmp/caps.json
+
   # 秒级反馈通道:跨平台静态检查。跑在 runner 宿主机上(ubuntu-latest 自带 python3),
   # 不用容器、不装依赖,~10 秒出结论——把「Apple-only 写法」挡在 2 分钟的构建之前。
   portability:
