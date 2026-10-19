@@ -40,14 +40,12 @@ jobs:
             spm-${{ runner.os }}-debug-
 
       - name: Toolchain
-        if: steps.changes.outputs.run == 'true'
         run: swift --version
 
       - name: Build
         run: swift build
 
       - name: Test
-        if: steps.changes.outputs.run == 'true'
         run: swift test
 
       - name: Save SwiftPM cache
@@ -76,7 +74,6 @@ jobs:
             docs/spec
             scripts/verify
       - name: Build (orzmc)
-        if: steps.changes.outputs.run == 'true'
         run: swift build --only-use-versions-from-resolved-file
       - name: Verify ledger against capabilities
         run: |
@@ -199,16 +196,15 @@ jobs:
             -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
 
       - name: Toolchain
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: swift --version
 
       - name: Build (orzmc)
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: |
-          # `--static-swift-stdlib`：把 Swift 运行时静态链进去。
-          # 否则 exe 依赖 swiftCore.dll 等运行时 DLL，用户机器没装 Swift 就 STATUS_DLL_NOT_FOUND
-          # （真机实测：0xC0000135）。
-          swift build --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file 2>&1 |
+          swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
             Tee-Object -FilePath build.log
 
       - name: Smoke (runtime, 干净 PATH)
@@ -238,6 +234,7 @@ jobs:
       # 单测在 Windows 上已是硬门禁(2026-10-18 起:98 tests 全过;
       # 之前 `defaultRoot()` 断言写死了 `/minecraft`,已按平台修正)。
       - name: Test
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: swift test 2>&1 | Tee-Object -FilePath test.log
 
