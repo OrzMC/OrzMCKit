@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.16.0](https://github.com/OrzMC/OrzMCKit/compare/v0.15.0...v0.16.0) (2026-10-19)
+
+
+### Features
+
+* **release:** dry-run 支持「打 tag 之前」跑（用源码版本），构建断言改用 verify 输出的 tag ([#73](https://github.com/OrzMC/OrzMCKit/issues/73)) ([6443dbc](https://github.com/OrzMC/OrzMCKit/commit/6443dbc1e1e16ffffabe104f1eedbc6ddef72f63))
+* **windows:** 发布形态改为 zip（exe + 运行时 DLL）；安装器解压；自升级从 zip 取 exe ([#69](https://github.com/OrzMC/OrzMCKit/issues/69)) ([3acc636](https://github.com/OrzMC/OrzMCKit/commit/3acc636b75a48cb66ea3d4d87956975846bd9329))
+
+
+### Bug Fixes
+
+* **release:** build-windows 的版本断言也改用 verify 输出的 tag（dry-run 前会拿到 main 而假失败） ([#75](https://github.com/OrzMC/OrzMCKit/issues/75)) ([8e77516](https://github.com/OrzMC/OrzMCKit/commit/8e775161e201a9cddbb9dd6f36afba35221b1fd2))
+* **release:** tag 输入改为可选（dry-run 不填），正式发布缺 tag 时明确报错 ([#74](https://github.com/OrzMC/OrzMCKit/issues/74)) ([076b3d4](https://github.com/OrzMC/OrzMCKit/commit/076b3d442911ae07006283fb25265eaaeba430f5))
+* **windows:** 资产名改为 orzmc-windows-x86_64.zip（内容已是 zip，名字没跟上） ([#70](https://github.com/OrzMC/OrzMCKit/issues/70)) ([ffa46d3](https://github.com/OrzMC/OrzMCKit/commit/ffa46d3e017f2c5d51ac59aa767b38df0f33d647))
+* **windows:** 静态链接 Swift 运行时（用户机器无 Swift → STATUS_DLL_NOT_FOUND），并用干净 PATH 验证 ([#67](https://github.com/OrzMC/OrzMCKit/issues/67)) ([6a12131](https://github.com/OrzMC/OrzMCKit/commit/6a1213153cb3966832c97801bf9872e2f6b60b6a))
+
 ## [0.15.0](https://github.com/OrzMC/OrzMCKit/compare/v0.14.0...v0.15.0) (2026-10-18)
 
 
