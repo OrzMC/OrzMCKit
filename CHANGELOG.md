@@ -3,6 +3,14 @@
 ## [0.16.0](https://github.com/OrzMC/OrzMCKit/compare/v0.15.0...v0.16.0) (2026-10-19)
 
 
+### ⚠️ 升级须知（Windows 资产是 zip / 发布链路已加固）
+
+- **Windows 用安装器整包安装**（`orzmc-windows-<arch>.zip` = exe + Swift 运行时 DLL），
+  只下 exe 在没装 Swift 的机器上会 `STATUS_DLL_NOT_FOUND`。
+- PowerShell 补全按 F6 不落盘：`orzmc completion powershell` 追加到 `$PROFILE`。
+- `orzmc app …` 是 macOS 专属；Windows/Linux 返回 `E_UNSUPPORTED`。
+- 发布链路新增 **dry-run**（发版前排雷）与发布后 Linux 资产自动验收。
+
 ### Features
 
 * **release:** dry-run 支持「打 tag 之前」跑（用源码版本），构建断言改用 verify 输出的 tag ([#73](https://github.com/OrzMC/OrzMCKit/issues/73)) ([6443dbc](https://github.com/OrzMC/OrzMCKit/commit/6443dbc1e1e16ffffabe104f1eedbc6ddef72f63))
