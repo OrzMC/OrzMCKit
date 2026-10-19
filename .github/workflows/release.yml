@@ -298,7 +298,7 @@ jobs:
       - name: Assert the binary reports the released version
         shell: pwsh
         env:
-          TAG: ${{ inputs.tag || github.ref_name }}
+          TAG: ${{ needs.verify.outputs.tag }}
         run: |
           $out = (& ".\verify\orzmc.exe" --version | Select-Object -First 1)
           $want = "orzmc $($env:TAG.TrimStart('v'))"
