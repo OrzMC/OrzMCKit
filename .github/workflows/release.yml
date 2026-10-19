@@ -11,8 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "要发布的 tag(如 v0.1.0)"
-        required: true
+        # dry-run 时可不填（用源码版本拼 tag）；正式发布仍必须填，否则 verify 会报错。
+        description: "要发布的 tag(如 v0.1.0)；dry-run 可留空"
+        required: false
         type: string
       dry-run:
         # 实测痛点：发布后才暴露打包/断言问题（`file` 缺失、静态链接无效、资产名不匹配…），
@@ -63,6 +64,11 @@ jobs:
           DRY_RUN: ${{ inputs.dry-run }}
         run: |
           set -euo pipefail
+          # 正式发布必须显式给 tag（手工 dispatch 且未填时 github.ref_name 是分支名）。
+          if [ "$DRY_RUN" != "true" ] && [ "${{ inputs.tag }}" = "" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::error::正式发布必须提供 tag 输入（如 -f tag=v0.16.0）"
+            exit 1
+          fi
           # dry-run 允许在**打 tag 之前**跑（发布前排雷），此时以源码版本为准。
           if [ "$DRY_RUN" = "true" ] && ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
             TAG="v$VERSION"
