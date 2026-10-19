@@ -73,6 +73,7 @@ jobs:
           sparse-checkout: |
             docs/spec
             scripts/verify
+            scripts/accept
       - name: Build (orzmc)
         run: swift build --only-use-versions-from-resolved-file
       - name: Verify ledger against capabilities
