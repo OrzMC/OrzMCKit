@@ -130,14 +130,18 @@ struct CompletionCommand: AsyncCommand {
             completionPath = "\(home)/.local/share/bash-completion/completions/orzmc"
             try writeScript(render(context: context, target: "bash"), to: completionPath)
             // 落点靠 bash-completion 自动加载；没装（如 macOS 自带 bash 3.2）就必须 source。
+            // 行尾标记与 Python 一致（`# added by orzmc ...`）：便于幂等识别与用户检索。
             hint = ensureLine(
-                "[ -f \"\(completionPath)\" ] && . \"\(completionPath)\"",
+                "[ -f \"\(completionPath)\" ] && . \"\(completionPath)\"  # added by orzmc completion install",
                 in: "\(home)/.bashrc"
             )
         case "zsh":
             completionPath = "\(home)/.zsh/completions/_orzmc"
             try writeScript(render(context: context, target: "zsh"), to: completionPath)
-            hint = ensureLine("fpath+=(~/.zsh/completions); autoload -Uz compinit; compinit", in: "\(home)/.zshrc")
+            hint = ensureLine(
+                "fpath+=(~/.zsh/completions); autoload -Uz compinit; compinit  # added by orzmc completion install",
+                in: "\(home)/.zshrc"
+            )
         case "fish":
             completionPath = "\(home)/.config/fish/completions/orzmc.fish"
             // fish 自动加载该目录，无需改 rc。
