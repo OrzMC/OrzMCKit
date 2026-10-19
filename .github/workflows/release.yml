@@ -243,6 +243,9 @@ jobs:
 
   # Windows 产物（D14 Phase 6.5）。前提同 `ci.yml` 的 `windows` job：
   # `windows-2022` + Swift 6.2 + `update-sdk-modules` + 开发者模式（详见 docs/windows-port.md）。
+  # x64 与 **arm64** 两腿并行（Swift 6.2 起 swift.org 提供 Windows 10 arm64 工具链，
+  # runner 用 `windows-11-arm`）；资产名与 `install.ps1` 的 `$env:PROCESSOR_ARCHITECTURE`
+  # 映射一致：`orzmc-windows-<arch>.zip`。
   build-windows:
     needs: verify
     strategy:
@@ -250,7 +253,11 @@ jobs:
       matrix:
         include:
           - runner: windows-2022
+            arch: amd64
             asset: orzmc-windows-x86_64.zip
+          - runner: windows-11-arm
+            arch: arm64
+            asset: orzmc-windows-arm64.zip
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
@@ -262,6 +269,8 @@ jobs:
         with:
           swift-version: swift-6.2-release
           swift-build: 6.2-RELEASE
+          # amd64 / arm64：arm64 腿必须显式指定，否则装上 x64 工具链却在 arm64 上跑
+          build_arch: ${{ matrix.arch }}
           update-sdk-modules: true
       - name: Enable Developer Mode (symlinks for build-tool plugins)
         shell: pwsh
@@ -307,7 +316,7 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: orzmc-windows-x86_64
+          name: orzmc-windows-${{ matrix.arch }}
           path: ${{ matrix.asset }}
           if-no-files-found: error
 
