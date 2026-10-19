@@ -3,7 +3,16 @@ name: CI
 on:
   push:
     branches: [main]
+    # 纯文档/CHANGELOG 提交不必跑 6 个 job（实测：main 上每次 push 平均 5 分钟，
+    # Windows job 13 分钟）。代码变更照常跑。
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
   pull_request:
+    # release-please 的分支只改版本号与 CHANGELOG，跑满 CI 纯浪费
+    # （2026-10-18 实测：一天 11 次）。
+    branches-ignore:
+      - "release-please--**"
   workflow_dispatch:
 
 concurrency:
@@ -146,13 +155,33 @@ jobs:
   #   2. Swift **6.2**(6.0 的 SwiftPM 在 Windows 上处理构建插件输出有缺陷);
   #   3. `update-sdk-modules: true` + 开发者模式(SwiftPM 需要建符号链接)。
   windows:
+    # 只在 main 与手动触发时跑（一次 13 分钟），且**只在源码/依赖/工作流变更时**跑：
+    # 指针 bump、文档提交不触发（实测一天 15 次 main push 里多数与源码无关）。
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: windows-2022
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect source changes
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git diff --name-only HEAD~1 HEAD -- Sources Package.swift Package.resolved .github/workflows | grep -q .; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "无源码变更，跳过 Windows 构建（省 ~13 分钟）"
+          fi
 
       - name: Install Swift
+        if: steps.changes.outputs.run == 'true'
         uses: compnerd/gha-setup-swift@main
         with:
           swift-version: swift-6.2-release
@@ -160,25 +189,26 @@ jobs:
           update-sdk-modules: true
 
       - name: Enable Developer Mode (symlinks for build-tool plugins)
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: |
           New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" `
             -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
 
       - name: Toolchain
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: swift --version
 
       - name: Build (orzmc)
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: |
-          # `--static-swift-stdlib`：把 Swift 运行时静态链进去。
-          # 否则 exe 依赖 swiftCore.dll 等运行时 DLL，用户机器没装 Swift 就 STATUS_DLL_NOT_FOUND
-          # （真机实测：0xC0000135）。
-          swift build --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file 2>&1 |
+          swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
             Tee-Object -FilePath build.log
 
       - name: Smoke (runtime, 干净 PATH)
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: |
           # 产物 = exe + 运行时 DLL（见 release.yml 的打包说明）：先按发布形态放好，再清 PATH 验证。
@@ -204,6 +234,7 @@ jobs:
       # 单测在 Windows 上已是硬门禁(2026-10-18 起:98 tests 全过;
       # 之前 `defaultRoot()` 断言写死了 `/minecraft`,已按平台修正)。
       - name: Test
+        if: steps.changes.outputs.run == 'true'
         shell: pwsh
         run: swift test 2>&1 | Tee-Object -FilePath test.log
 

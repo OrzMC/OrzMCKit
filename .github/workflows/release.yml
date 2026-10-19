@@ -14,6 +14,14 @@ on:
         description: "要发布的 tag(如 v0.1.0)"
         required: true
         type: string
+      dry-run:
+        # 实测痛点：发布后才暴露打包/断言问题（`file` 缺失、静态链接无效、资产名不匹配…），
+        # 结果同一个 tag 被重新 dispatch 了 3 次（每次 15–20 分钟）。
+        # dry-run 会完整构建 + 打包 + 断言，但**不发布、不改资产**。
+        description: "只构建与校验，不发布（发布前排雷用）"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -293,6 +301,7 @@ jobs:
   # 资产坏了这一步就红，而不是等用户踩。
   verify-linux:
     needs: publish
+    if: ${{ !inputs.dry-run }}
     runs-on: ubuntu-latest
     container: swift:6.0
     timeout-minutes: 30
@@ -353,6 +362,7 @@ jobs:
 
   publish:
     needs: [build, build-linux, build-windows]
+    if: ${{ !inputs.dry-run }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
