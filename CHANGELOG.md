@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/OrzMC/OrzMCKit/compare/v0.19.0...v0.20.0) (2026-10-20)
+
+
+### Features
+
+* **auth:** auth.json 跨进程写锁（与 Python 侧算法逐字一致） ([#89](https://github.com/OrzMC/OrzMCKit/issues/89)) ([4181c1a](https://github.com/OrzMC/OrzMCKit/commit/4181c1ab88d397034df878ac9331e3e6eb9bb203))
+
 ## [0.19.0](https://github.com/OrzMC/OrzMCKit/compare/v0.18.0...v0.19.0) (2026-10-20)
 
 ### 🐧 升级须知（Linux 资产改为自包含）
