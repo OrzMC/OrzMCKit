@@ -44,8 +44,9 @@ struct AppCommand: AsyncCommand {
         }
         #else
         // 规范 §8：跨面安装的是 macOS `.app`；其它平台显式不支持（D8 跨平台时的诚实边界）。
+        // 文案必须与 Python 侧逐字一致（共享验收 harness 会比对）。
         _ = signature
-        throw CLIError("当前平台不支持 orzmc app(仅 macOS);请直接从 Release 下载", code: "E_UNSUPPORTED")
+        throw CLIError("「orzmc app」仅支持 macOS;当前平台不支持,请从 Release 下载应用包", code: "E_UNSUPPORTED")
         #endif
     }
 
