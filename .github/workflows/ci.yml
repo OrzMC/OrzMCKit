@@ -260,6 +260,84 @@ jobs:
             test.log
           if-no-files-found: ignore
 
+  # Windows **arm64** 探针：只在手动触发时跑（零常态成本）。
+  # 用途：在合并 workflow 改动**之前**先确认「`windows-11-arm` runner + Swift arm64 工具链 +
+  # 构建 + 单测」这条链路真通（验证驱动的纪律：不猜）。
+  #   gh workflow run ci.yml --ref <branch>
+  # 正式发布的权威门禁仍是 `release.yml` 的 `build-windows`（x64 + arm64 两腿，见 docs/windows-port.md）。
+  windows-arm64:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-11-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift (arm64)
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.2-release
+          swift-build: 6.2-RELEASE
+          # arm64 必须显式指定：默认 amd64，会装上 x64 工具链而在 arm64 上跑不起来
+          build_arch: arm64
+          update-sdk-modules: true
+
+      - name: Enable Developer Mode (symlinks for build-tool plugins)
+        shell: pwsh
+        run: |
+          New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" `
+            -Name AllowDevelopmentWithoutDevLicense -PropertyType DWORD -Value 1 -Force | Out-Null
+
+      # runner 默认给的是 x64 的 MSVC 库；不换 arm64 会报
+      # `msvcrt.lib(...): machine type x64 conflicts with arm64`（2026-10-19 探针实测）。
+      - name: MSVC environment (arm64)
+        uses: ./.github/actions/msvc-arm64
+
+      - name: Toolchain
+        shell: pwsh
+        run: |
+          swift --version
+          Write-Output "PROCESSOR_ARCHITECTURE=$env:PROCESSOR_ARCHITECTURE"
+          Write-Output "LIB=$env:LIB"
+
+      - name: Build (orzmc)
+        shell: pwsh
+        run: |
+          swift build --product orzmc --only-use-versions-from-resolved-file 2>&1 |
+            Tee-Object -FilePath build.log
+
+      - name: Smoke (runtime, 干净 PATH)
+        shell: pwsh
+        run: |
+          # 与 `windows` job 同一套断言；bin 路径改用 `--show-bin-path`（不写死目标三元组）。
+          $bin = Join-Path (swift build --show-bin-path) "orzmc.exe"
+          $runtime = (Get-ChildItem "$env:LOCALAPPDATA\Programs\Swift\Runtimes\*\usr\bin" -Directory | Select-Object -Last 1).FullName
+          New-Item -ItemType Directory -Force shipped | Out-Null
+          Copy-Item $bin shipped\
+          Copy-Item "$runtime\*.dll" shipped\
+          $exe = ".\shipped\orzmc.exe"
+          $env:Path = ($env:Path -split ';' | Where-Object { $_ -and $_ -notmatch 'Swift' }) -join ';'
+          & $exe --version | Select-Object -First 1
+          $caps = & $exe --json capabilities | ConvertFrom-Json
+          if ($caps.ok -ne $true) { throw "capabilities 信封不对" }
+          if (($caps.data.commands | Measure-Object).Count -lt 13) { throw "capabilities 命令不足" }
+          $completion = (& $exe completion bash) -join "`n"
+          if ($completion -notmatch "function _orzmc\(\)") { throw "补全函数名不是 _orzmc" }
+          Write-Output "ok: arm64 smoke passed"
+
+      - name: Test
+        shell: pwsh
+        run: swift test 2>&1 | Tee-Object -FilePath test.log
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64-logs
+          path: |
+            build.log
+            test.log
+          if-no-files-found: ignore
+
   # CLI 行为验收(父仓库 `docs/spec/conformance.md` §12):帮助 / 信封 / 退出码 /
   # 取消语义 / 补全落点 / MCP,全部走**真实进程**。与 Python 侧
   # 与 Python 侧跑的是**同一份**父仓库脚本 `scripts/accept/cli.py`(M2)。
