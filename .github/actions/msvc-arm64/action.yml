@@ -1,50 +1,67 @@
 name: MSVC arm64 environment
 description: >-
-  为 Windows arm64 构建准备 MSVC 的 INCLUDE/LIB（指向 arm64 库）。
+  为 Windows arm64 构建选中一套**能配合 Swift 工具链**的 MSVC 工具集，并导出 arm64 的 INCLUDE/LIB。
 
-  为什么不用 `vcvarsall.bat arm64` / `ilammy/msvc-dev-cmd`：GitHub 的 arm Windows runner
-  上 PATH 极长，vcvarsall 内部展开 PATH 时直接撞 cmd 的 8191 字符上限，报
-  `The input line is too long.` / `The syntax of the command is incorrect.`
-  （2026-10-19 探针实测）。而 Swift/Clang 链接 arm64 只需要架构一致的 INCLUDE/LIB。
+  两件事都不能省：
 
-  输入：无（版本目录由 vswhere + 目录排序动态发现）。
-  输出：向 `$GITHUB_ENV` 追加 `INCLUDE` / `LIB`（覆盖 runner 默认的 x64 值），
-  并向 `$GITHUB_PATH` 追加 MSVC 的 arm64 工具目录（存在时）。
+  1. **架构**：runner 默认给的是 x64 的 MSVC 库，直接编译会
+     `lld-link: error: msvcrt.lib(...): machine type x64 conflicts with arm64`。
+  2. **版本**：arm 镜像里同时装了 VS 17 与 VS 18。VS 18 的 STL 要求 **Clang 20+**，
+     Swift 6.2 自带 Clang 19 → `STL1000: Unexpected compiler version, expected Clang 20 or newer.`
+     （同一条理由让 x64 侧钉在 `windows-2022` 而不是 `windows-2025`）。故优先选**较老**
+     且带 `lib\arm64` 的工具集。
+
+  为什么不用 `vcvarsall.bat arm64` / `ilammy/msvc-dev-cmd`：这台 runner 的 PATH 极长，
+  vcvarsall 内部展开 PATH 时直接撞 cmd 的 8191 字符上限，报
+  `The input line is too long.` / `The syntax of the command is incorrect.`（2026-10-19 探针实测）。
+
+  输出：向 `$GITHUB_ENV` 追加 `INCLUDE` / `LIB` / `VCToolsInstallDir` / `WindowsSdkDir` /
+      `WindowsSDKVersion` / `UCRTVersion`，并向 `$GITHUB_PATH` 追加该工具集的 arm64 交叉工具目录。
 
 runs:
   using: composite
   steps:
-    - name: Set INCLUDE / LIB for arm64
+    - name: Select MSVC toolset and export arm64 INCLUDE / LIB
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
 
         $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
         if (-not (Test-Path $vswhere)) { throw "vswhere 不存在: $vswhere" }
-        $vsRoot = & $vswhere -latest -products '*' -property installationPath
-        if (-not $vsRoot) { throw 'vswhere 找不到 Visual Studio 安装' }
-        Write-Output "Visual Studio: $vsRoot"
+        $roots = @(& $vswhere -products '*' -property installationPath)
+        if (-not $roots) { throw 'vswhere 找不到任何 Visual Studio 安装' }
+        Write-Output "Visual Studio 安装: $($roots -join ' | ')"
 
-        $msvcRoot = Join-Path $vsRoot 'VC\Tools\MSVC'
-        $msvc = Get-ChildItem $msvcRoot -Directory | Sort-Object Name -Descending | Select-Object -First 1
-        if (-not $msvc) { throw "找不到 MSVC 工具集: $msvcRoot" }
+        # 收集所有「带 arm64 库」的 MSVC 工具集；**最老优先**（VS17 的 STL 才接受 Clang 19）。
+        $toolsets = foreach ($root in $roots) {
+          $dir = Join-Path $root 'VC\Tools\MSVC'
+          if (-not (Test-Path $dir)) { continue }
+          foreach ($t in Get-ChildItem $dir -Directory) {
+            if (Test-Path (Join-Path $t.FullName 'lib\arm64')) {
+              [pscustomobject]@{ Version = [version]$t.Name; Path = $t.FullName }
+            }
+          }
+        }
+        if (-not $toolsets) { throw '没有任何 MSVC 工具集带 lib\arm64（缺 arm64 生成工具组件）' }
+        $msvc = $toolsets | Sort-Object Version | Select-Object -First 1
+        Write-Output "选用 MSVC 工具集: $($msvc.Path)"
 
         $kits = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10'
         $sdkVer = (Get-ChildItem (Join-Path $kits 'Lib') -Directory |
                    Where-Object { Test-Path (Join-Path $_.FullName 'ucrt\arm64') } |
                    Sort-Object Name -Descending | Select-Object -First 1).Name
         if (-not $sdkVer) { throw '找不到带 arm64 库的 Windows SDK' }
-        Write-Output "MSVC: $($msvc.Name) / Windows SDK: $sdkVer"
+        Write-Output "Windows SDK: $sdkVer"
 
-        # 目标架构的库必须在 LIB 最前面：runner 默认给的是 x64，混进去就是
-        # `lld-link: error: msvcrt.lib(...): machine type x64 conflicts with arm64`。
+        # 目标架构的库必须排在 LIB 最前面：runner 默认值里是 x64，混进去就是
+        # `msvcrt.lib(...): machine type x64 conflicts with arm64`。
         $lib = @(
-          (Join-Path $msvc.FullName 'lib\arm64')
+          (Join-Path $msvc.Path 'lib\arm64')
           (Join-Path $kits "Lib\$sdkVer\ucrt\arm64")
           (Join-Path $kits "Lib\$sdkVer\um\arm64")
         ) -join ';'
         $include = @(
-          (Join-Path $msvc.FullName 'include')
+          (Join-Path $msvc.Path 'include')
           (Join-Path $kits "Include\$sdkVer\ucrt")
           (Join-Path $kits "Include\$sdkVer\um")
           (Join-Path $kits "Include\$sdkVer\shared")
@@ -53,11 +70,20 @@ runs:
 
         "LIB=$lib" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         "INCLUDE=$include" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "VCToolsInstallDir=$($msvc.Path)\" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "WindowsSdkDir=$kits\" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "WindowsSDKVersion=$sdkVer\" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "UCRTVersion=$sdkVer" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-        # 原生 arm64 工具目录（HostARM64）若存在就放到 PATH 前面；Swift 自带 lld-link，
-        # 所以这步是让 arm64 的 cl/link 也可用的兜底，不是必需。
-        $msvcBin = Join-Path $msvc.FullName 'bin\HostARM64\arm64'
-        if (Test-Path $msvcBin) { $msvcBin | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8 }
+        # arm64 的交叉/原生工具目录（Swift 自带 lld-link，这里是 cl/link 可用的兜底）。
+        foreach ($hostArch in @('HostARM64\arm64', 'HostX64\arm64')) {
+          $bin = Join-Path $msvc.Path "bin\$hostArch"
+          if (Test-Path $bin) {
+            $bin | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+            Write-Output "MSVC bin: $bin"
+            break
+          }
+        }
 
         Write-Output "LIB=$lib"
         Write-Output "INCLUDE=$include"
