@@ -11,7 +11,7 @@
 # 选项：-version <tag> / -dir <path> / -no-modify-rc / -no-completion / -file <path> / -uninstall / -help
 #
 # 约定（与 Unix 安装器 / 规范 install-update.md 一致）：
-#   * 资产名 `orzmc-windows-<arch>.exe`；用 Release 的 `SHA256SUMS` 校验；
+#   * 资产名 `orzmc-windows-<arch>.zip`（exe + Swift 运行时 DLL）；用 Release 的 `SHA256SUMS` 校验；
 #   * 二进制落在 `%LOCALAPPDATA%\Programs\orzmc\orzmc.exe`，用户 PATH 幂等添加；
 #   * 安装记录 `%LOCALAPPDATA%\orzmc\install.conf`（platform=windows-<arch>、surface、version）；
 #   * 补全按 frontends.md **F6**：PowerShell 只生成脚本、不落盘（这里只打印提示）。

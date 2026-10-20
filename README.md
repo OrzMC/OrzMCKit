@@ -1,6 +1,7 @@
 # OrzMCKit
 
-Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的 **macOS 原生实现**。
+Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的**跨平台原生实现**
+（macOS / Linux / Windows，均为官方发布资产）。
 
 - **引擎库**：`Game`（版本解析、规范布局、下载、托管 JRE、受管进程、启动计划）、`Fabric`。
 - **可执行**：`orzmc` CLI（与 [Python 实现 `orzmc`](https://github.com/OrzMC/OrzPythonMC) 共用
@@ -12,18 +13,36 @@ Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的 
 
 ## Install
 
-macOS（用户级，免 sudo）：
+macOS / Linux（用户级，免 sudo）：
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/OrzMC/OrzMCKit/main/scripts/install.sh | sh
 ```
 
-安装器会把二进制放到 `${XDG_BIN_HOME:-$HOME/.local/bin}`、配置 PATH 与补全，并写入
-`${XDG_STATE_HOME:-$HOME/.local/state}/orzmc/install.conf`（契约见父仓库
+Windows（PowerShell 5.1+，用户级）：
+
+```powershell
+irm https://raw.githubusercontent.com/OrzMC/OrzMCKit/main/scripts/install.ps1 | iex
+# 指定版本（绕过 GitHub API 限流）：
+#   $code = (irm https://raw.githubusercontent.com/OrzMC/OrzMCKit/main/scripts/install.ps1)
+#   & ([scriptblock]::Create($code)) -version vX.Y.Z
+# 卸载：& ([scriptblock]::Create($code)) -uninstall
+```
+
+安装器会把二进制放到 `${XDG_BIN_HOME:-$HOME/.local/bin}`（Windows：`%LOCALAPPDATA%\Programs\orzmc`）、
+配置 PATH 与补全，并写入状态目录下的 `install.conf`（契约见父仓库
 [`docs/spec/install-update.md`](https://github.com/OrzMC/OrzMC/blob/main/docs/spec/install-update.md)）。
 
-手动安装：从 [Releases](https://github.com/OrzMC/OrzMCKit/releases) 下载对应架构的
-`orzmc-macos-arm64` / `orzmc-macos-x86_64`，`chmod +x` 后放入 PATH。
+手动安装：从 [Releases](https://github.com/OrzMC/OrzMCKit/releases) 下载对应平台的资产——
+
+| 平台 | 资产 | 用法 |
+|---|---|---|
+| macOS | `orzmc-macos-{arm64,x86_64}` | `chmod +x` 后放入 PATH |
+| Linux | `orzmc-linux-{arm64,x86_64}` | 同上 |
+| Windows | `orzmc-windows-{x86_64,arm64}.zip` | 解压到同一目录（exe + Swift 运行时 DLL），把目录加入 PATH |
+
+Windows 的 zip 形状是必须的：`--static-swift-stdlib` 在 Windows 上不生效，单 exe 在没装 Swift
+的机器上会 `STATUS_DLL_NOT_FOUND`。校验用同一 Release 里的 `SHA256SUMS`。
 
 ## Usage
 
@@ -56,7 +75,7 @@ orzmc --json list            # 机器可读信封 {ok,command,data,error}（AI/�
   `--version` / `version` / `--json` 信封都读它。
 - 发版走 Conventional Commits + [release-please](https://github.com/googleapis/release-please)：
   合并 release PR 自动打 tag `vX.Y.Z` 并触发 [`release.yml`](.github/workflows/release.yml)
-  构建 macOS 二进制、校验自报版本、挂到 GitHub Release。
+  构建 macOS / Linux / Windows（x64 + **arm64**）资产、校验自报版本、挂到 GitHub Release。
 - **护栏**：tag 必须等于代码里的版本，且必须落在 `main` 上。
 
 ## Development
@@ -65,9 +84,9 @@ orzmc --json list            # 机器可读信封 {ok,command,data,error}（AI/�
 swift build
 swift test
 
-# CLI 行为验收（真实进程；CI 同款；与 Python 侧重名分组一一对应）
+# CLI 行为验收（真实进程；CI 同款；与 Python 侧跑的是**同一份**父仓库脚本）
 swift build -c debug --product orzmc
-python3 scripts/accept_cli.py
+python3 <path-to-parent>/scripts/accept/cli.py --cli "$(swift build -c debug --show-bin-path)/orzmc"
 
 # 一致性套件（需父仓库 fixtures；CI 同款）
 swift build -c debug --product ConformanceAdapter
