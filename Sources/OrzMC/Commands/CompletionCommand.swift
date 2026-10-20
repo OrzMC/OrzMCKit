@@ -122,12 +122,18 @@ struct CompletionCommand: AsyncCommand {
         }
         // 用 $HOME（可被测试/沙箱覆盖）；NSHomeDirectory() 在 macOS 上会忽略 $HOME。
         let home = environment["HOME"] ?? NSHomeDirectory()
+        // 补全落点一律用 `/`（历史行为；Windows 上 bash/zsh/fish 补全不在支持范围内，
+        // powershell/pwsh 已在上面按 F6 返回 E_UNSUPPORTED）。
         let completionPath: String
         var hint: String?
 
         switch shellName {
         case "bash":
-            completionPath = "\(home)/.local/share/bash-completion/completions/orzmc"
+            guard let path = StatePaths.completionPath(shell: "bash", home: home, isWindows: false) else {
+                throw CLIError("不支持自动安装 \(shellName) 的补全;请用 `orzmc completion \(shellName)` 生成脚本",
+                               code: "E_UNSUPPORTED")
+            }
+            completionPath = path
             try writeScript(render(context: context, target: "bash"), to: completionPath)
             // 落点靠 bash-completion 自动加载；没装（如 macOS 自带 bash 3.2）就必须 source。
             // 行尾标记与 Python 一致（`# added by orzmc ...`）：便于幂等识别与用户检索。
@@ -136,14 +142,22 @@ struct CompletionCommand: AsyncCommand {
                 in: "\(home)/.bashrc"
             )
         case "zsh":
-            completionPath = "\(home)/.zsh/completions/_orzmc"
+            guard let path = StatePaths.completionPath(shell: "zsh", home: home, isWindows: false) else {
+                throw CLIError("不支持自动安装 \(shellName) 的补全;请用 `orzmc completion \(shellName)` 生成脚本",
+                               code: "E_UNSUPPORTED")
+            }
+            completionPath = path
             try writeScript(render(context: context, target: "zsh"), to: completionPath)
             hint = ensureLine(
                 "fpath+=(~/.zsh/completions); autoload -Uz compinit; compinit  # added by orzmc completion install",
                 in: "\(home)/.zshrc"
             )
         case "fish":
-            completionPath = "\(home)/.config/fish/completions/orzmc.fish"
+            guard let path = StatePaths.completionPath(shell: "fish", home: home, isWindows: false) else {
+                throw CLIError("不支持自动安装 \(shellName) 的补全;请用 `orzmc completion \(shellName)` 生成脚本",
+                               code: "E_UNSUPPORTED")
+            }
+            completionPath = path
             // fish 自动加载该目录，无需改 rc。
             try writeScript(render(context: context, target: "fish"), to: completionPath)
         default:

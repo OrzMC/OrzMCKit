@@ -7,7 +7,7 @@ public final class AuthStore: @unchecked Sendable {
     public let path: String
 
     public init(stateDir: String? = nil) {
-        self.path = (stateDir ?? Self.stateDir()) + "/" + Self.fileName
+        self.path = stateDir.map { $0 + "/" + Self.fileName } ?? StatePaths.authSession()
     }
 
     /// 状态目录（与 `InstallManifest` 同一实现，见 `StatePaths`；Windows 走 `%LOCALAPPDATA%`）。

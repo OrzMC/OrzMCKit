@@ -84,7 +84,7 @@ public struct InstallManifest: Sendable {
         StatePaths.stateDir(environment: environment)
     }
 
-    public static func defaultPath() -> String { stateDir() + "/" + fileName }
+    public static func defaultPath() -> String { StatePaths.installRecord() }
 
     // MARK: 读写
 
