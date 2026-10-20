@@ -38,10 +38,12 @@ jobs:
           swift --version
           . /etc/os-release
           echo "image: $PRETTY_NAME"
-          ldd --version | head -1
+          ldd --version | sed -n 1p
 
       - name: Build (dynamic Swift stdlib)
         shell: bash
+        env:
+          ORZSWIFTLINT_SKIP: "1"
         run: |
           set -euo pipefail
           swift build -c release --product orzmc --only-use-versions-from-resolved-file
@@ -50,9 +52,11 @@ jobs:
 
       - name: Build (--static-swift-stdlib)
         shell: bash
+        env:
+          ORZSWIFTLINT_SKIP: "1"
         run: |
           set -euo pipefail
-          rm -rf .build/release
+          rm -rf .build/release .build/plugins/outputs
           swift build -c release --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file
           BIN="$(swift build -c release --show-bin-path)/orzmc"
           cp "$BIN" "/tmp/orzmc-${{ matrix.arch }}-static"

@@ -34,7 +34,7 @@
       "location": "https://github.com/OrzGeeker/OrzSwiftKit.git",
       "state": {
         "branch": "main",
-        "revision": "890eb6f35719281950a9dc842936d2beeafd5b72"
+        "revision": "02099422d933ebef6b42fc90b5bad838d7abde97"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind": "remoteSourceControl",
       "location": "https://github.com/OrzGeeker/OrzSwiftLint.git",
       "state": {
-        "revision": "40dfc5f081812fa0b3a099cb9d024cd394966c8a",
-        "version": "0.0.9"
+        "revision": "c474f95508a49e7ed1c3e828c94fc0e560e129a7",
+        "version": "0.0.10"
       }
     },
     {

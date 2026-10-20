@@ -148,6 +148,22 @@ jobs:
             .build
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
+      - name: Assert self-contained (no Swift runtime deps)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 规范要求 Linux 资产**能独立运行**（docs/cli-comparison.md §3）：
+          # 不允许残留 libswiftCore / libFoundation / libdispatch 这些"要用户自己装运行时"的依赖。
+          bad="$(ldd "./${{ matrix.asset }}" | grep -E 'libswift|libFoundation|libdispatch|libBlocksRuntime' || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::产物仍依赖 Swift 运行时，干净系统跑不起来："
+            echo "$bad"
+            exit 1
+          fi
+          echo "ldd:"
+          ldd "./${{ matrix.asset }}"
+          echo "glibc floor: $(strings -a "./${{ matrix.asset }}" | grep -oE 'GLIBC_2\.[0-9]+' | sort -V -u | tail -1)"
+
       - name: Assert architecture
         shell: bash
         run: |
@@ -193,16 +209,30 @@ jobs:
             file_arch: aarch64
             asset: orzmc-linux-arm64
     runs-on: ${{ matrix.runner }}
-    container: swift:6.0
+    # 在 **Ubuntu 22.04（glibc 2.35）** 里构建，而不是默认的 24.04（glibc 2.39）：
+    # 产物的 glibc 下限由构建机决定，而 `docs/cli-comparison.md` §3 实测原本要 GLIBC_2.38，
+    # 干净的老发行版直接跑不起来。`swift:6.0-jammy` 是多架构镜像，x86_64/arm64 都能用。
+    container: swift:6.0-jammy
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
       - name: Toolchain
-        run: swift --version
-      - name: Build (release)
-        run: swift build -c release --product orzmc
+        run: |
+          set -euo pipefail
+          swift --version
+          . /etc/os-release
+          echo "build image: $PRETTY_NAME"
+      # SwiftLint 的**预编译二进制**要求 GLIBC_2.38（比 22.04 新），插件失败会中止构建。
+      # 发布产物不需要 lint（CI 的 test/linux job 已跑），这里用逃生阀跳过。
+      - name: Build (release, static Swift stdlib)
+        env:
+          ORZSWIFTLINT_SKIP: "1"
+        run: |
+          set -euo pipefail
+          # `--static-swift-stdlib`：把 Swift 运行时静态链进去，产物不再依赖 libswiftCore.so（§6.1）。
+          swift build -c release --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file
       - name: Package the binary
         shell: bash
         run: |
@@ -332,11 +362,15 @@ jobs:
   # 发布后验收（D14.1 第 1/4 条）：把**用户真正下载到的** Linux 资产拉下来，
   # 在干净容器里跑 CLI 行为验收 + 安装器全链路（安装 → 补全落盘 → 清单 → 卸载清理）。
   # 资产坏了这一步就红，而不是等用户踩。
+  # 发布后验收（D14.1 第 1/4 条）：把**用户真正下载到的** Linux 资产拉下来，在**干净**系统里跑。
+  # ⚠️ 这里**不能**用 `swift:*` 镜像：那镜像自带 Swift 运行时，等于"在有运行时的环境里验运行时依赖"，
+  # 会掩盖「产物不自包含」——2026-10-20 就是这么漏掉 `libswiftCore.so` 的（见 docs/cli-comparison.md §6.1）。
+  # 现在用 `ubuntu:24.04`（无 Swift 工具链），先断言 ldd 干净，再跑验收与安装器全链路。
   verify-linux:
     needs: publish
     if: ${{ !inputs.dry-run }}
     runs-on: ubuntu-latest
-    container: swift:6.0
+    container: ubuntu:24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -355,7 +389,9 @@ jobs:
         shell: bash
         run: |
           apt-get update -qq
-          apt-get install -y -qq curl ca-certificates python3 zip >/dev/null
+          apt-get install -y -qq curl ca-certificates python3 zip binutils >/dev/null
+          . /etc/os-release
+          echo "verify image: $PRETTY_NAME (no Swift toolchain)"
 
       - name: Download the published asset
         shell: bash
@@ -368,6 +404,18 @@ jobs:
           curl -fsSL -o dist/orzmc-linux-x86_64 "${base}/orzmc-linux-x86_64"
           curl -fsSL -o dist/SHA256SUMS "${base}/SHA256SUMS"
           cd dist && sha256sum -c --ignore-missing SHA256SUMS
+
+      - name: Assert the released binary is self-contained
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 关键断言：在**没有 Swift 运行时**的干净镜像里，ldd 不能出现 libswift*。
+          if ldd dist/orzmc-linux-x86_64 | grep -E 'libswift|libFoundation|libdispatch|libBlocksRuntime'; then
+            echo "::error::发布的 Linux 资产依赖 Swift 运行时 → 干净系统无法运行"
+            exit 1
+          fi
+          echo "ok: 无 Swift 运行时依赖"
+          echo "glibc floor: $(strings -a dist/orzmc-linux-x86_64 | grep -oE 'GLIBC_2\.[0-9]+' | sort -V -u | tail -1)"
 
       - name: CLI acceptance on the released binary
         shell: bash
