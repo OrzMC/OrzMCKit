@@ -1,7 +1,10 @@
 # OrzMCKit
 
-Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的**跨平台原生实现**
-（macOS / Linux / Windows，均为官方发布资产）。
+> ⚠️ **实验性项目 / 不对外分发**：本仓库的 `orzmc` CLI 与 [Python 实现](https://github.com/OrzMC/OrzPythonMC)**同步迭代**（命令面与行为对齐），但它**不是对外分发的实现** —— Release 一律标 **pre-release**、不宣传，
+> 仅作为 Swift 生态的实现样例与跨平台能力探索。普通用户请用 Python 实现（PyPI / 一键安装器）。
+
+Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的**跨平台实现**
+（macOS / Linux / Windows；Linux 资产自包含、glibc ≥ 2.35）。
 
 - **引擎库**：`Game`（版本解析、规范布局、下载、托管 JRE、受管进程、启动计划）、`Fabric`。
 - **可执行**：`orzmc` CLI（与 [Python 实现 `orzmc`](https://github.com/OrzMC/OrzPythonMC) 共用
@@ -12,6 +15,11 @@ Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的*
 > 父仓库 [OrzMC](https://github.com/OrzMC/OrzMC) 是产品伞：规范、发版组合、跨仓协调都在那里。
 
 ## Install
+
+> **仅维护者/实验者**：下面的安装器默认从本仓库的 Release 装 —— 而 Release 现在是 **pre-release**，
+> 安装器需要显式给版本（`-version vX.Y.Z` / `--version vX.Y.Z`）。普通用户请装
+> [Python 实现](https://github.com/OrzMC/OrzPythonMC)。
+
 
 macOS / Linux（用户级，免 sudo）：
 
