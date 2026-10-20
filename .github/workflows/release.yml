@@ -472,18 +472,20 @@ jobs:
           cd dist
           sha256sum orzmc-macos-* orzmc-linux-* orzmc-windows-* > SHA256SUMS
           cat SHA256SUMS
-      - name: Create or update the GitHub Release
+      - name: Create or update the GitHub Release (as **pre-release**)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
+          # 2026-10-20 决定：Swift 实现与 Python **同步迭代**，但**不对外分发**。
+          # Release 一律标 `--prerelease`：GitHub 的 `releases/latest`、官网与安装器默认路径都不会指向它；
+          # 仍可下载（维护者/实验者真机验证需要），但**不宣传、不进产品推荐路径**。
           if gh release view "$TAG" >/dev/null 2>&1; then
-            # release-please 可能已建好 draft release(带整理过的 notes):补产物后发布。
             gh release upload "$TAG" dist/* --clobber
-            gh release edit "$TAG" --draft=false
+            gh release edit "$TAG" --draft=false --prerelease
           else
-            gh release create "$TAG" dist/* --title "$TAG" --generate-notes
+            gh release create "$TAG" dist/* --title "$TAG" --generate-notes --prerelease
           fi
-          gh release view "$TAG" --json tagName,isDraft,url \
-            --jq '"released \(.tagName) draft=\(.isDraft) \(.url)"'
+          gh release view "$TAG" --json tagName,isDraft,isPrerelease,url \
+            --jq '"released \(.tagName) draft=\(.isDraft) prerelease=\(.isPrerelease) \(.url)"'
