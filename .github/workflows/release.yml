@@ -232,7 +232,9 @@ jobs:
         run: |
           set -euo pipefail
           # `--static-swift-stdlib`：把 Swift 运行时静态链进去，产物不再依赖 libswiftCore.so（§6.1）。
-          swift build -c release --product orzmc --static-swift-stdlib --only-use-versions-from-resolved-file
+          # `-Xlinker -s`：去掉符号表（静态链后体积明显变大，链接期 strip 最省事）。
+          swift build -c release --product orzmc --static-swift-stdlib -Xlinker -s \
+            --only-use-versions-from-resolved-file
       - name: Package the binary
         shell: bash
         run: |
