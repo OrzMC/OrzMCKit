@@ -78,6 +78,28 @@ import Testing
         )
     }
 
+    /// 共享落点：安装记录 / 认证文件 / 补全落点都必须从 `StatePaths` 派生（单一事实源）。
+    /// 一致性用例 `state-paths/*` 从适配器侧兜住，这里兜住「有人又手写一遍路径」。
+    @Test func sharedPathsDeriveFromStateDir() {
+        let env = ["HOME": "/home/u", "XDG_STATE_HOME": "/xdg/state"]
+        #expect(StatePaths.installRecord(environment: env, isWindows: false) == "/xdg/state/orzmc/install.conf")
+        #expect(StatePaths.authSession(environment: env, isWindows: false) == "/xdg/state/orzmc/auth.json")
+
+        let win = ["USERPROFILE": "C:\\Users\\u", "LOCALAPPDATA": "C:\\Users\\u\\AppData\\Local"]
+        #expect(
+            StatePaths.installRecord(environment: win, isWindows: true)
+                == "C:\\Users\\u\\AppData\\Local\\orzmc\\install.conf"
+        )
+
+        #expect(StatePaths.completionPath(shell: "bash", home: "/home/u", isWindows: false)
+            == "/home/u/.local/share/bash-completion/completions/orzmc")
+        #expect(StatePaths.completionPath(shell: "zsh", home: "/home/u", isWindows: false)
+            == "/home/u/.zsh/completions/_orzmc")
+        #expect(StatePaths.completionPath(shell: "fish", home: "/home/u", isWindows: false)
+            == "/home/u/.config/fish/completions/orzmc.fish")
+        #expect(StatePaths.completionPath(shell: "powershell", home: "/home/u", isWindows: false) == nil)
+    }
+
     @Test func gameRootFollowsPlatform() {
         #expect(StatePaths.defaultGameRoot(environment: ["HOME": "/home/u"], isWindows: false) == "/home/u/minecraft")
         #expect(

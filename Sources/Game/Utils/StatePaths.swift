@@ -46,6 +46,41 @@ public enum StatePaths {
         return base + sep + "orzmc"
     }
 
+    /// 安装记录 `install.conf`（规范 `install-update.md` §2/§3）。
+    public static func installRecord(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        isWindows: Bool = StatePaths.isWindows
+    ) -> String {
+        stateDir(environment: environment, isWindows: isWindows) + separator(isWindows: isWindows) + "install.conf"
+    }
+
+    /// 认证令牌 `auth.json`（规范 `auth.md`；原子写 + 0600）。
+    public static func authSession(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        isWindows: Bool = StatePaths.isWindows
+    ) -> String {
+        stateDir(environment: environment, isWindows: isWindows) + separator(isWindows: isWindows) + "auth.json"
+    }
+
+    /// 补全脚本落点（规范 `frontends.md` F6）；`powershell`/`pwsh` 不落盘。
+    public static func completionPath(
+        shell: String,
+        home: String,
+        isWindows: Bool = StatePaths.isWindows
+    ) -> String? {
+        let sep = separator(isWindows: isWindows)
+        switch shell {
+        case "bash":
+            return home + sep + ".local" + sep + "share" + sep + "bash-completion" + sep + "completions" + sep + "orzmc"
+        case "zsh":
+            return home + sep + ".zsh" + sep + "completions" + sep + "_orzmc"
+        case "fish":
+            return home + sep + ".config" + sep + "fish" + sep + "completions" + sep + "orzmc.fish"
+        default:
+            return nil
+        }
+    }
+
     /// 默认游戏根目录：`<home>/minecraft`。
     public static func defaultGameRoot(
         environment: [String: String] = ProcessInfo.processInfo.environment,

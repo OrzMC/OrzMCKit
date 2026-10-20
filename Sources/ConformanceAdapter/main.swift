@@ -459,12 +459,47 @@ func opAuthClassifyXstsError(_ given: [String: Any]) -> [String: Any] {
     return ["code": code ?? NSNull()]
 }
 
+func opStatePaths(_ given: [String: Any]) -> [String: Any] {
+    // 平台与环境都从 fixture 注入（`StatePaths` 的平台判定本来就可注入）：
+    // 这样 Windows 形态在 macOS/Linux 上也能被断言，路径漂移会直接红。
+    let env = (given["env"] as? [String: String]) ?? [:]
+    let isWindows = ((given["platform"] as? [String: Any])?["os"] as? String) == "windows"
+    let stateDir = StatePaths.stateDir(environment: env, isWindows: isWindows)
+    let home = env[isWindows ? "USERPROFILE" : "HOME"] ?? ""
+    var data: [String: Any] = [
+        "stateDir": stateDir,
+        "installRecord": StatePaths.installRecord(environment: env, isWindows: isWindows),
+        "authSession": StatePaths.authSession(environment: env, isWindows: isWindows),
+        "gameRoot": StatePaths.defaultGameRoot(environment: env, isWindows: isWindows),
+    ]
+    if !isWindows {
+        var completion: [String: String] = [:]
+        for shell in ["bash", "zsh", "fish"] {
+            if let path = StatePaths.completionPath(shell: shell, home: home, isWindows: false) {
+                completion[shell] = path
+            }
+        }
+        data["completion"] = completion
+    }
+    // 分隔符统一成 `/`（与其它 fixture 一致）。
+    return data.mapValues { value -> Any in
+        if let nested = value as? [String: String] {
+            return nested.mapValues { $0.replacingOccurrences(of: "\\", with: "/") }
+        }
+        if let text = value as? String {
+            return text.replacingOccurrences(of: "\\", with: "/")
+        }
+        return value
+    }
+}
+
 func dispatch(_ request: [String: Any]) -> [String: Any] {
     guard let operation = request["operation"] as? String else {
         return err("E_USAGE", "缺少 operation")
     }
     do {
         switch operation {
+        case "statePaths": return ok(opStatePaths(request))
         case "planLayout": return ok(opPlanLayout(request))
         case "planClientLaunch": return ok(try opPlanClientLaunch(request))
         case "planClientDownload": return ok(try opPlanClientDownload(request))
