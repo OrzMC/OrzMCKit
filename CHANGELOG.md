@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.19.0](https://github.com/OrzMC/OrzMCKit/compare/v0.18.0...v0.19.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **release:** 自包含断言挪回 build-linux，容器步骤显式 shell: bash ([c14b121](https://github.com/OrzMC/OrzMCKit/commit/c14b121d506fc4a927ad579eefaacbe99e643501))
+
+
+### Miscellaneous Chores
+
+* **release:** 0.19.0（Linux 资产自包含：静态链 + glibc 2.35） ([2d8c492](https://github.com/OrzMC/OrzMCKit/commit/2d8c492a5b5d173cac6c2ca4b7788f091180cdb4))
+
 ## [0.18.0](https://github.com/OrzMC/OrzMCKit/compare/v0.17.0...v0.18.0) (2026-10-20)
 
 ### 🪟 升级须知（新增平台：Windows arm64）
