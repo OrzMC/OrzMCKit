@@ -148,22 +148,6 @@ jobs:
             .build
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
-      - name: Assert self-contained (no Swift runtime deps)
-        shell: bash
-        run: |
-          set -euo pipefail
-          # 规范要求 Linux 资产**能独立运行**（docs/cli-comparison.md §3）：
-          # 不允许残留 libswiftCore / libFoundation / libdispatch 这些"要用户自己装运行时"的依赖。
-          bad="$(ldd "./${{ matrix.asset }}" | grep -E 'libswift|libFoundation|libdispatch|libBlocksRuntime' || true)"
-          if [ -n "$bad" ]; then
-            echo "::error::产物仍依赖 Swift 运行时，干净系统跑不起来："
-            echo "$bad"
-            exit 1
-          fi
-          echo "ldd:"
-          ldd "./${{ matrix.asset }}"
-          echo "glibc floor: $(strings -a "./${{ matrix.asset }}" | grep -oE 'GLIBC_2\.[0-9]+' | sort -V -u | tail -1)"
-
       - name: Assert architecture
         shell: bash
         run: |
@@ -219,6 +203,7 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref }}
       - name: Toolchain
+        shell: bash
         run: |
           set -euo pipefail
           swift --version
@@ -227,6 +212,7 @@ jobs:
       # SwiftLint 的**预编译二进制**要求 GLIBC_2.38（比 22.04 新），插件失败会中止构建。
       # 发布产物不需要 lint（CI 的 test/linux job 已跑），这里用逃生阀跳过。
       - name: Build (release, static Swift stdlib)
+        shell: bash
         env:
           ORZSWIFTLINT_SKIP: "1"
         run: |
@@ -243,6 +229,22 @@ jobs:
           cp "$BIN/orzmc" "${{ matrix.asset }}"
           chmod +x "${{ matrix.asset }}"
           ./"${{ matrix.asset }}" version
+      - name: Assert self-contained (no Swift runtime deps)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 规范要求 Linux 资产**能独立运行**（docs/cli-comparison.md §3）：
+          # 不允许残留 libswiftCore / libFoundation / libdispatch 这些"要用户自己装运行时"的依赖。
+          bad="$(ldd "./${{ matrix.asset }}" | grep -E 'libswift|libFoundation|libdispatch|libBlocksRuntime' || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::产物仍依赖 Swift 运行时，干净系统跑不起来："
+            echo "$bad"
+            exit 1
+          fi
+          echo "ldd:"
+          ldd "./${{ matrix.asset }}"
+          echo "glibc floor: $(strings -a "./${{ matrix.asset }}" | grep -oE 'GLIBC_2\.[0-9]+' | sort -V -u | tail -1)"
+
       - name: Assert architecture
         shell: bash
         run: |
