@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.18.0](https://github.com/OrzMC/OrzMCKit/compare/v0.17.0...v0.18.0) (2026-10-20)
+
+
+### Features
+
+* **conformance:** 上报 state.paths（共享落点单一事实源 + 一致性用例） ([#83](https://github.com/OrzMC/OrzMCKit/issues/83)) ([4389a76](https://github.com/OrzMC/OrzMCKit/commit/4389a76338a9499ed76e12a7d856a76a00256a95))
+
+
+### Bug Fixes
+
+* **app:** 非 macOS 报错文案对齐规范（逐字与 Python 一致） ([#81](https://github.com/OrzMC/OrzMCKit/issues/81)) ([45b875e](https://github.com/OrzMC/OrzMCKit/commit/45b875ec5efb1d37d4dae87d3a9591f4d74ad8ba))
+
+
+### Miscellaneous Chores
+
+* **release:** 0.18.0（把 Windows arm64 资产带进发布矩阵） ([#80](https://github.com/OrzMC/OrzMCKit/issues/80)) ([93eeb4f](https://github.com/OrzMC/OrzMCKit/commit/93eeb4fa557259220efd2d799708258a4354f509))
+
 ## [0.17.0](https://github.com/OrzMC/OrzMCKit/compare/v0.16.0...v0.17.0) (2026-10-19)
 
 
