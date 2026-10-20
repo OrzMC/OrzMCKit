@@ -106,6 +106,9 @@ public struct Authenticator: Sendable {
     }
 
     /// 返回一个 MC 令牌有效的会话：缓存 → 刷新 → 设备码登录。
+    ///
+    /// **刷新必须持跨进程锁，并在锁内先重读**（`frontends.md` F4/F4.1）：刷新会轮换 refresh token，
+    /// 两个前端同时刷会让后者的令牌立刻失效（用户被登出）。
     public func ensure() async throws -> AuthSession {
         if let session = store.load() {
             if AuthMapping.tokenState(expiresAt: session.expiresAt, now: clock()).state == .valid {
@@ -113,14 +116,34 @@ public struct Authenticator: Sendable {
                 cached.source = "cache"
                 return cached
             }
-            do {
-                return try await refresh(session.msa)
-            } catch {
-                // refresh token 被拒 → 清掉重登，不吞错（最终 login 的错会抛出）。
-                store.clear()
+            return try await withRefreshLock { current in
+                // 锁内**重读**：另一个前端可能刚刷完 → 直接用它的结果，别再刷一次。
+                let target = current ?? session
+                if AuthMapping.tokenState(expiresAt: target.expiresAt, now: clock()).state == .valid {
+                    var cached = target
+                    cached.source = "cache"
+                    return cached
+                }
+                do {
+                    return try await refresh(target.msa)
+                } catch {
+                    // refresh token 被拒 → 清掉重登，不吞错（最终 login 的错会抛出）。
+                    store.clear()
+                }
+                return try await login()
             }
         }
         return try await login()
+    }
+
+    /// 持锁执行一段可能刷新令牌的逻辑（锁内自动重读；见 F4.1）。
+    private func withRefreshLock(
+        _ body: (AuthSession?) async throws -> AuthSession
+    ) async throws -> AuthSession {
+        var lock = AuthStore.lock()
+        try lock.acquire()
+        defer { lock.release() }
+        return try await body(store.load())
     }
 
     /// 完整设备码流程（用户需在浏览器完成授权）。

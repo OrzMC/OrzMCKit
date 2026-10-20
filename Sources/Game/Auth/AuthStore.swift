@@ -75,6 +75,12 @@ public final class AuthStore: @unchecked Sendable {
         try? FileManager.default.removeItem(atPath: path)
     }
 
+    /// 跨进程锁（`frontends.md` F4.1）：刷新令牌的整个「读 → 换新 → 写」要持它。
+    /// 与 Python 侧算法逐字一致（`<stateDir>/auth.lock` 目录锁）。
+    public static func lock(stateDir: String? = nil) -> FileLock {
+        FileLock.authLock(stateDir: stateDir)
+    }
+
     static func number(_ value: Any?) -> Double? {
         if let value = value as? Double { return value }
         if let value = value as? NSNumber { return value.doubleValue }
