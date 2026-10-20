@@ -2,6 +2,18 @@
 
 ## [0.19.0](https://github.com/OrzMC/OrzMCKit/compare/v0.18.0...v0.19.0) (2026-10-20)
 
+### 🐧 升级须知（Linux 资产改为自包含）
+
+之前 `orzmc-linux-*` 动态依赖 Swift 运行时（`libswiftCore.so` 等），干净发行版直接报
+`cannot open shared object file`；glibc 下限是 2.38（仅 Ubuntu 24.04+ 可用）。
+
+`0.19.0` 起：**Swift 运行时静态链进二进制**、构建机换 Ubuntu 22.04（**glibc 2.35**）。
+仍然依赖系统 `libcurl4`（`libcurl.so.4`，多数发行版自带；缺失时 `apt install libcurl4`）。
+
+- 升级：重跑安装器，或 `orzmc update`；
+- 体积：`orzmc-linux-*` 35 MB → **约 62–65 MB**（静态链 + Foundation/ICU 的代价）；
+- x64/arm64 均适用；macOS/Windows 资产不受影响。
+
 
 ### Bug Fixes
 
