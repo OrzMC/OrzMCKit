@@ -2,6 +2,15 @@
 
 ## [0.18.0](https://github.com/OrzMC/OrzMCKit/compare/v0.17.0...v0.18.0) (2026-10-20)
 
+### 🪟 升级须知（新增平台：Windows arm64）
+
+`0.18.0` 起提供 **`orzmc-windows-arm64.zip`**（exe + Swift 运行时 DLL，与 x64 同形状）。
+
+- 新装：`irm https://raw.githubusercontent.com/OrzMC/OrzMCKit/main/scripts/install.ps1 | iex`
+  （安装器按 `PROCESSOR_ARCHITECTURE` 自动选 `x86_64` / `arm64`）；
+- arm64 机器上已装过 x64 版本：跑一次 `orzmc update` 即可换成 arm64（自升级按运行时架构判定资产名）；
+- x64 用户无变化，无需任何动作。
+
 
 ### Features
 
