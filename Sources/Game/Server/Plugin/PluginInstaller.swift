@@ -69,12 +69,12 @@ public enum PluginInstaller {
     }
 
     /// 归一化：小写 + 只留字母数字（`LuckPerms-Bukkit-5.4.1.jar` → `luckpermsbukkit541jar`）。
-    static func normalize(_ text: String) -> String {
+    public static func normalize(_ text: String) -> String {
         text.lowercased().filter { $0.isLetter || $0.isNumber }
     }
 
     /// 从文件名里挑出版本号（最长的一段 `数字(.数字)+`，如 `5.4.1`）；没有 → `nil`。
-    static func versionToken(in text: String) -> String? {
+    public static func versionToken(in text: String) -> String? {
         var best: String?
         var current = ""
         for character in text {
@@ -145,7 +145,7 @@ public enum PluginInstaller {
         return dir
     }
 
-    static func stripExtension(_ fileName: String) -> String {
+    public static func stripExtension(_ fileName: String) -> String {
         fileName.lowercased().hasSuffix(".jar") ? String(fileName.dropLast(4)) : fileName
     }
 }
