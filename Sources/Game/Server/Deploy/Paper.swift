@@ -180,13 +180,24 @@ public struct PaperServer: Server {
             jarFileURL.path(),
             workDirectory: workDirectory,
             javaExecutable: javaExecutable,
-            jarArgs: [
-                "--online-mode=\(serverInfo.onlineMode ? "true" : "false")",
-                "--nojline",
-                "--noconsole"
-            ]
+            jarArgs: PaperServer.launchArguments(onlineMode: serverInfo.onlineMode)
         )
         return process
+    }
+
+    /// Paper 的启动参数（**必须保留控制台**）。
+    ///
+    /// 曾经这里带 `--noconsole`（Paper 的 "Disables the console"），后果是：
+    /// - 任何前端（GUI 控制台 / CLI 终端）发进去的命令**没人读**，`list`/`say`/`help` 全无响应；
+    /// - `ManagedProcess.stop()` 先写 `stop` 优雅停止 → 没人读 → 只能等 60s 超时后 SIGTERM。
+    ///
+    /// 保留 `--nojline`：它只关掉 JLine（终端行编辑），控制台本身照常从 stdin 读命令，
+    /// 在"stdin 是管道"的非 TTY 场景下更稳（JLine 会做终端能力探测）。
+    static func launchArguments(onlineMode: Bool) -> [String] {
+        [
+            "--online-mode=\(onlineMode ? "true" : "false")",
+            "--nojline"
+        ]
     }
 
     private let client = DownloadAPIClient()
