@@ -103,3 +103,24 @@ import Testing
         }
     }
 }
+
+/// Paper 的控制台必须是**可用**的（回归：`--noconsole` 曾让所有命令石沉大海）。
+@Suite struct PaperLaunchArgumentTests {
+    @Test func paperKeepsConsoleEnabled() {
+        let args = PaperServer.launchArguments(onlineMode: false)
+        #expect(!args.contains("--noconsole"), "带 --noconsole 会让 stdin 命令没人读（GUI 控制台/stop 都失效）")
+        #expect(args.contains("--nojline"), "非 TTY 下关掉 JLine 更稳，但控制台本身仍在")
+        #expect(args.contains("--online-mode=false"))
+    }
+
+    @Test func paperOnlineModeFlagFollowsSetting() {
+        #expect(PaperServer.launchArguments(onlineMode: true).contains("--online-mode=true"))
+    }
+
+    @Test func otherServersDoNotDisableConsole() {
+        // Vanilla / Fabric / Forge 走通用 `launchServer`，不加 Paper 专属 flag；
+        // 这里只守住"别再有人往任何核心加 --noconsole"。
+        let args = PaperServer.launchArguments(onlineMode: true)
+        #expect(args.filter { $0 == "--noconsole" }.isEmpty)
+    }
+}
