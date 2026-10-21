@@ -41,6 +41,12 @@ public struct ClientInfo: Sendable {
     
     // Console
     let console: (any Console)?
+
+    /// 客户端**运行期日志**观察者（stdout + stderr 合流，按块回调）。
+    ///
+    /// 无控制台的前端（GUI）用它显示客户端控制台；CLI 为 `nil`（终端自己就是控制台）。
+    /// 与 `ServerInfo.onServerLog` 对称。
+    public var onClientLog: (@Sendable (String) -> Void)?
     
     public init(
         version: Version,
@@ -60,7 +66,8 @@ public struct ClientInfo: Sendable {
         maxMem: String,
         jvmArgs: [String] = [],
         addon: ProfileAddon? = nil,
-        console: (any Console)? = nil
+        console: (any Console)? = nil,
+        onClientLog: (@Sendable (String) -> Void)? = nil
     ) {
         self.version = version
         self.username = username
@@ -80,5 +87,6 @@ public struct ClientInfo: Sendable {
         self.jvmArgs = jvmArgs
         self.addon = addon
         self.console = console
+        self.onClientLog = onClientLog
     }
 }
