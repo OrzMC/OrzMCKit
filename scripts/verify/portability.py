@@ -37,6 +37,8 @@ ABS_PATH_ALLOW = {
     "Tests/OrzMCTests/CapabilityTests.swift": {"/bin/zsh", "/bin/tcsh"},
     # 服务端控制台的进程测试：需要真的读 stdin / 写 stdout，整个用例已 `#if !os(Windows)`。
     "Tests/OrzMCTests/ServerConsoleTests.swift": {"/bin/sh"},
+    # 同上：客户端控制台的进程输出测试（整个用例已 `#if !os(Windows)`）。
+    "Tests/OrzMCTests/ClientConsoleTests.swift": {"/bin/sh"},
 }
 
 NETWORKING_SYMBOLS = re.compile(

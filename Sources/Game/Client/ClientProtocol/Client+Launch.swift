@@ -12,10 +12,12 @@ public extension Client {
         let major = await JavaRuntime.javaMajor(forMCVersion: version, root: clientInfo.rootDir)
         let javaExecutable = try await JavaRuntime.ensure(root: clientInfo.rootDir, major: major)
         let gameDir = GamePlan.clientDir(version: version, root: clientInfo.rootDir)
+        // `onClientLog`：无控制台前端（GUI）把客户端运行期输出接走（与 `ServerInfo.onServerLog` 对称）。
         return try ProcessRunner.run(
             executable: javaExecutable,
             args: args,
-            workDirectory: gameDir
+            workDirectory: gameDir,
+            onLine: clientInfo.onClientLog
         )
     }
 }
