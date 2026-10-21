@@ -81,4 +81,50 @@ public extension GamePlan {
     static func serverPluginUpdateDir(version: String, type: GameType, root: String = defaultRoot) -> String {
         serverPluginDir(version: version, type: type, root: root) + "/update"
     }
+
+    /// 世界存档目录（`<serverDir>/<level-name>`）。
+    ///
+    /// `level-name` 来自 `server.properties`（默认 `world`）；玩家改过名字时调用方应传
+    /// `ServerProperties.levelName(atServerDir:)` 的结果，别假设一定是 `world`。
+    static func serverWorldDir(
+        version: String,
+        type: GameType,
+        levelName: String = ServerProperties.defaultLevelName,
+        root: String = defaultRoot
+    ) -> String {
+        serverDir(version: version, type: type, root: root) + "/" + levelName
+    }
+
+    /// 服务端日志目录（`logs/latest.log` 在这里）。
+    static func serverLogsDir(version: String, type: GameType, root: String = defaultRoot) -> String {
+        serverDir(version: version, type: type, root: root) + "/logs"
+    }
+
+    /// 服务端 mod 目录（Fabric / Forge）。
+    static func serverModsDir(version: String, type: GameType, root: String = defaultRoot) -> String {
+        serverDir(version: version, type: type, root: root) + "/mods"
+    }
+
+    /// 服务端配置目录（Fabric / Forge 的 mod 配置）。
+    static func serverConfigDir(version: String, type: GameType, root: String = defaultRoot) -> String {
+        serverDir(version: version, type: type, root: root) + "/config"
+    }
+
+    // MARK: client 常用目录
+
+    static func clientLogsDir(version: String, root: String = defaultRoot) -> String {
+        clientDir(version: version, root: root) + "/logs"
+    }
+
+    static func clientSavesDir(version: String, root: String = defaultRoot) -> String {
+        clientDir(version: version, root: root) + "/saves"
+    }
+
+    static func clientModsDir(version: String, root: String = defaultRoot) -> String {
+        clientDir(version: version, root: root) + "/mods"
+    }
+
+    static func clientResourcePacksDir(version: String, root: String = defaultRoot) -> String {
+        clientDir(version: version, root: root) + "/resourcepacks"
+    }
 }
