@@ -64,10 +64,12 @@ public extension Server {
             self.serverInfo.console?.warning("服务器运行为离线模式")
         }
         // 受管进程（B7）：优雅停止 → SIGTERM → SIGKILL，退出码归一。
+        // `onServerLog`：无控制台前端（GUI）把服务端运行期输出接走（stdout+stderr 合流）。
         return try ProcessRunner.run(
             executable: javaExecutable,
             args: args,
-            workDirectory: workDirectory
+            workDirectory: workDirectory,
+            onLine: serverInfo.onServerLog
         )
     }
 
