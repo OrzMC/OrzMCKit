@@ -42,6 +42,13 @@ public struct ServerInfo: Sendable {
     /// CLI 为 `nil`，行为与此前一致。
     public var onProgress: (@Sendable (LaunchProgress) -> Void)?
 
+    /// 让服务端进程**继承前端自己的 stdin**（终端场景）。
+    ///
+    /// - CLI（`orzmc server`）设 `true`：用户在终端里打字，输入直达服务端控制台
+    ///   （与 Python 侧 `subprocess.Popen` 不传 `stdin=` 的语义一致）；
+    /// - GUI 设 `false`：GUI 用 `ManagedProcess.send(_:)` 显式往管道写命令。
+    public var inheritStandardInput: Bool
+
     /// 服务端**运行期日志**观察者（stdout + stderr 合流，按块回调）。
     ///
     /// 无控制台的前端（GUI）用它显示服务端控制台；CLI 为 `nil`（终端自己就是控制台）。
@@ -67,7 +74,8 @@ public struct ServerInfo: Sendable {
         jarOptions: String? = nil,
         console: (any Console)? = nil,
         onProgress: (@Sendable (LaunchProgress) -> Void)? = nil,
-        onServerLog: (@Sendable (String) -> Void)? = nil
+        onServerLog: (@Sendable (String) -> Void)? = nil,
+        inheritStandardInput: Bool = false
     ) {
         self.version = version
         self.rootDir = rootDir
@@ -87,5 +95,6 @@ public struct ServerInfo: Sendable {
         self.console = console
         self.onProgress = onProgress
         self.onServerLog = onServerLog
+        self.inheritStandardInput = inheritStandardInput
     }
 }

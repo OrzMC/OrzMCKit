@@ -122,7 +122,10 @@ struct ServerCommand: AsyncCommand {
             onlineMode: onlineMode,
             showJarHelpInfo: jarHelp,
             jarOptions: jarOpts,
-            console: console
+            console: console,
+            // CLI：让服务端**继承终端 stdin** —— 用户在终端里敲的 `list`/`say`/`stop` 直达服务端控制台。
+            // （GUI 走 `ManagedProcess.send`，不需要继承。）
+            inheritStandardInput: true
         )
 
         let code: Int

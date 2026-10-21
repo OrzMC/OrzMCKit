@@ -69,7 +69,8 @@ public extension Server {
             executable: javaExecutable,
             args: args,
             workDirectory: workDirectory,
-            onLine: serverInfo.onServerLog
+            onLine: serverInfo.onServerLog,
+            inheritStandardInput: serverInfo.inheritStandardInput
         )
     }
 
