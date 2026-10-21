@@ -42,6 +42,13 @@ public struct ServerInfo: Sendable {
     /// CLI 为 `nil`，行为与此前一致。
     public var onProgress: (@Sendable (LaunchProgress) -> Void)?
 
+    /// 服务端**运行期日志**观察者（stdout + stderr 合流，按块回调）。
+    ///
+    /// 无控制台的前端（GUI）用它显示服务端控制台；CLI 为 `nil`（终端自己就是控制台）。
+    /// 与 `onProgress` 分工：`onProgress` 是**下载/安装**阶段的结构化进度，
+    /// 这里是**进程跑起来之后**的原始输出（含用户命令的回应）。
+    public var onServerLog: (@Sendable (String) -> Void)?
+
     public init(
         version: String,
         rootDir: String = GamePlan.defaultRoot,
@@ -59,7 +66,8 @@ public struct ServerInfo: Sendable {
         showJarHelpInfo: Bool,
         jarOptions: String? = nil,
         console: (any Console)? = nil,
-        onProgress: (@Sendable (LaunchProgress) -> Void)? = nil
+        onProgress: (@Sendable (LaunchProgress) -> Void)? = nil,
+        onServerLog: (@Sendable (String) -> Void)? = nil
     ) {
         self.version = version
         self.rootDir = rootDir
@@ -78,5 +86,6 @@ public struct ServerInfo: Sendable {
         self.jarOptions = jarOptions
         self.console = console
         self.onProgress = onProgress
+        self.onServerLog = onServerLog
     }
 }

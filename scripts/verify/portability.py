@@ -35,6 +35,8 @@ ABS_PATH_ALLOW = {
     "Sources/OrzMC/SelfUpdate.swift": {"/bin/sh"},
     # 测试夹具：这些路径只作为字符串数据参与断言，不会被本机执行。
     "Tests/OrzMCTests/CapabilityTests.swift": {"/bin/zsh", "/bin/tcsh"},
+    # 服务端控制台的进程测试：需要真的读 stdin / 写 stdout，整个用例已 `#if !os(Windows)`。
+    "Tests/OrzMCTests/ServerConsoleTests.swift": {"/bin/sh"},
 }
 
 NETWORKING_SYMBOLS = re.compile(
