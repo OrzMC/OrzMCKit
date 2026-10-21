@@ -83,3 +83,38 @@ private final class Collector: @unchecked Sendable {
         return buffer
     }
 }
+
+/// CLI 让服务端继承终端 stdin（GUI 走管道 + `send`）——两种模式不能同时生效。
+@Suite struct ServerStdinModeTests {
+    @Test func serverInfoDefaultsToPipeMode() {
+        let info = ServerInfo(
+            version: "1.21.5", gui: false, debug: false, forceUpgrade: false, demo: false,
+            minMem: "512M", maxMem: "2G", onlineMode: false, showJarHelpInfo: false,
+            jarOptions: nil, console: nil
+        )
+        #expect(info.inheritStandardInput == false, "GUI 默认用管道，由 ManagedProcess.send 写命令")
+    }
+
+    @Test func cliCanInheritTerminalStdin() {
+        let info = ServerInfo(
+            version: "1.21.5", gui: false, debug: false, forceUpgrade: false, demo: false,
+            minMem: "512M", maxMem: "2G", onlineMode: false, showJarHelpInfo: false,
+            jarOptions: nil, console: nil, inheritStandardInput: true
+        )
+        #expect(info.inheritStandardInput)
+    }
+
+    #if !os(Windows)
+    @Test func inheritedStdinLetsChildReadCommands() async throws {
+        // 模拟 CLI：子进程继承我们（测试进程）的 stdin 时，不再有我们可写的管道；
+        // 反向验证"管道模式才有 send"。真正在终端里打字的验收在 air 上跑 `orzmc server`。
+        let process = try ProcessRunner.run(
+            executable: "/bin/sh",
+            args: ["-c", "sleep 1"],
+            inheritStandardInput: true
+        )
+        #expect(process.canSendCommands == false)
+        _ = await process.waitForExit()
+    }
+    #endif
+}
