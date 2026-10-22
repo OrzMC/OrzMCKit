@@ -18,6 +18,24 @@ BIN_NAME="orzmc"
 
 err() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
+# 解析「最新 release」的下载前缀。
+#
+# `releases/latest` 只指向**最新正式版**：本仓库的 Swift CLI 按 `docs/two-cli-strategy.md` §6
+# 一律以 **pre-release** 发布（与 Python 同步迭代、但不对外分发），此时
+# `releases/latest/download/<asset>` 恒为 404 —— GUI「安装 Swift CLI」失败的根因就在这里。
+# 改为问 API 要「最新一个 release」（含预发布），API 不可用（离线/限流）时再退回 latest。
+latest_base() {
+  api="https://api.github.com/repos/${REPO}/releases?per_page=1"
+  tag="$(curl -fsSL --max-time 15 "$api" 2>/dev/null \
+    | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  if [ -n "$tag" ]; then
+    printf '最新发布: %s\n' "$tag" >&2
+    printf 'https://github.com/%s/releases/download/%s' "$REPO" "$tag"
+  else
+    printf 'https://github.com/%s/releases/latest/download' "$REPO"
+  fi
+}
+
 os=""
 case "$(uname -s)" in
   Darwin) os="macos" ;;
@@ -35,7 +53,7 @@ esac
 asset="orzmc-${os}-${arch}"
 version="${ORZMC_VERSION:-}"
 case "$version" in
-  "")  base="https://github.com/${REPO}/releases/latest/download" ;;
+  "")  base="$(latest_base)" ;;
   v*)  base="https://github.com/${REPO}/releases/download/${version}" ;;
   *)   base="https://github.com/${REPO}/releases/download/v${version}" ;;
 esac

@@ -119,6 +119,21 @@ if ($arguments['uninstall']) { Invoke-Uninstall; return }
 $arch = Get-Arch
 if ($arch -eq 'x86') { throw '暂不支持 32 位 Windows（请用 x64 或 arm64）' }
 
+# `releases/latest` 只指向最新正式版；本仓库 CLI 一律以 pre-release 发布，
+# 所以先问 API 要「最新一个 release」（含预发布），失败再退回 latest。
+function Get-LatestBase {
+    try {
+        $releases = Invoke-RestMethod -UseBasicParsing -TimeoutSec 15 \
+            -Uri "https://api.github.com/repos/$script:Repo/releases?per_page=1"
+        $tag = $releases[0].tag_name
+        if ($tag) {
+            Write-Step "最新发布: $tag"
+            return "https://github.com/$script:Repo/releases/download/$tag"
+        }
+    } catch { }
+    return "https://github.com/$script:Repo/releases/latest/download"
+}
+
 $installDir = if ($arguments['dir']) { $arguments['dir'] } else { Join-Path $env:LOCALAPPDATA 'Programs\orzmc' }
 $binary = Join-Path $installDir "$script:Name.exe"
 # Windows 资产是 zip：Swift 运行时 DLL（swiftCore/Foundation/swiftCRT/…）必须随包分发，
@@ -130,7 +145,7 @@ if ($version) {
     if (-not $version.StartsWith('v')) { $version = "v$version" }
     $base = "https://github.com/$script:Repo/releases/download/$version"
 } else {
-    $base = "https://github.com/$script:Repo/releases/latest/download"
+    $base = Get-LatestBase
 }
 
 $temp = Join-Path ([IO.Path]::GetTempPath()) ("orzmc-install-" + [Guid]::NewGuid().ToString('N'))
