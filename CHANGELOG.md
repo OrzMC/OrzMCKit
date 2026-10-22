@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.21.0](https://github.com/OrzMC/OrzMCKit/compare/v0.20.0...v0.21.0) (2026-10-22)
+
+
+### Features
+
+* **client:** 无控制台前端可接收客户端运行期日志（onClientLog） ([#93](https://github.com/OrzMC/OrzMCKit/issues/93)) ([d690c4a](https://github.com/OrzMC/OrzMCKit/commit/d690c4af9f38d573499f3cca5f8eff66ec62e154))
+* **cli:** 服务端继承终端 stdin（`orzmc server` 里打字终于能进控制台） ([#95](https://github.com/OrzMC/OrzMCKit/issues/95)) ([8e66990](https://github.com/OrzMC/OrzMCKit/commit/8e66990ecb3d63e53dbd5437cf864a5ae93e85db))
+* **paths:** 常用目录路径 + `server.properties` 的 `level-name` 解析 ([6944afb](https://github.com/OrzMC/OrzMCKit/commit/6944afb518c6830034f97d89c566089a37eed57b))
+* **plugin:** 插件安装/更新目标目录对齐 Paper 官方机制（新装 plugins/、更新 plugins/update/） ([#96](https://github.com/OrzMC/OrzMCKit/issues/96)) ([0c26d38](https://github.com/OrzMC/OrzMCKit/commit/0c26d38741558aa3e53533457ff7a4f0cf3b39f7))
+* **server:** 无控制台前端可接收服务端运行期日志（onServerLog） ([#91](https://github.com/OrzMC/OrzMCKit/issues/91)) ([d104960](https://github.com/OrzMC/OrzMCKit/commit/d1049600ee89950a273118d4fe0cbb367bb3f64a))
+
+
+### Bug Fixes
+
+* **install:** 默认按「最新 release（含预发布）」解析版本，修 Swift CLI 装不上 ([#98](https://github.com/OrzMC/OrzMCKit/issues/98)) ([afd3264](https://github.com/OrzMC/OrzMCKit/commit/afd326407b3add391394647ff75adca90b9a2dce))
+* **plugin:** 公开 normalize/versionToken/stripExtension 供前端展示用 ([7ad5293](https://github.com/OrzMC/OrzMCKit/commit/7ad529374ecec7e305d5ab7fab31aba1c91c5064))
+* **server:** Paper 启动参数不再带 --noconsole（控制台命令全被丢弃） ([#94](https://github.com/OrzMC/OrzMCKit/issues/94)) ([d3d4686](https://github.com/OrzMC/OrzMCKit/commit/d3d46866d79283e6eb7bf6d6115ddbeb3076ab19))
+
 ## [0.20.0](https://github.com/OrzMC/OrzMCKit/compare/v0.19.0...v0.20.0) (2026-10-20)
 
 
