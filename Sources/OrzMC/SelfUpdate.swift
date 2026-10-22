@@ -121,6 +121,10 @@ enum SelfUpdate {
     static func latestTag(channel: String) async throws -> String {
         if channel == "beta", let tag = try? await firstReleaseTag() { return tag }
         if let tag = try? await apiLatestTag() { return tag }
+        // 仓库**只有预发布**时 `/releases/latest` 恒为 404（本仓库的 Swift CLI 就是这种发布
+        // 口径，见 docs/two-cli-strategy.md §6），退一步取「最新一个 release」（含预发布），
+        // 与 scripts/install.sh 的选择保持一致。
+        if let tag = try? await firstReleaseTag() { return tag }
         if let tag = try? await redirectLatestTag() { return tag }
         throw CLIError(
             "无法获取最新版本信息(网络问题或 GitHub API 限流)。请指定版本重试: orzmc update -v vX.Y.Z",
