@@ -81,17 +81,7 @@ public struct Launcher: Client {
         try await downloadClient()
     }
     
-    /// 下载Fabric客户端相关文件（库落到客户端 `libraries/`）
-    mutating func downloadFabric() async throws {
-        guard let downloadItemInfos = fabricDownloadItems() else {
-            return
-        }
-        let progress = ProgressReporter(console: clientInfo.console, title: "开始下载Fabric库文件")
-        try await progress.tracking {
-            try await Downloader.download(downloadItemInfos, onEvent: progress.update)
-        }
-        self.clientInfo.console?.success("下载Fabric库文件完成")
-    }
+    // `downloadFabric()` 已提升到 `Client` 扩展（`Client+Fabric.swift`），CLI/GUI 共用。
     
     /// 选择客户端启动方式
     mutating func chooseProfile() throws  {
