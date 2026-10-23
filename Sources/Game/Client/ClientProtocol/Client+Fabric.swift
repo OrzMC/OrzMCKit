@@ -50,7 +50,7 @@ extension Client {
     /// 与 `downloadClient(onEvent:)` 对称：**两个前端都必须调用**。
     /// CLI 走 `Launcher.run()`，GUI 走 `GUIClient.startWithProcess()`；漏掉这一步的表现是
     /// classpath 里有 loader 主类、库却不在 → 客户端启动失败（或静默回退成原版）。
-    mutating func downloadFabric(onEvent: (@Sendable (LaunchProgress) -> Void)? = nil) async throws {
+    public mutating func downloadFabric(onEvent: (@Sendable (LaunchProgress) -> Void)? = nil) async throws {
         guard let items = fabricDownloadItems() else { return }
         let progress = ProgressReporter(
             console: clientInfo.console,
