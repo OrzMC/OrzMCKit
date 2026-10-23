@@ -41,3 +41,25 @@ extension Client {
         return items.isEmpty ? nil : items
     }
 }
+
+// MARK: 下载
+
+extension Client {
+    /// 下载 Fabric 附加库（落到客户端 `libraries/`）；无附加组件时什么都不做。
+    ///
+    /// 与 `downloadClient(onEvent:)` 对称：**两个前端都必须调用**。
+    /// CLI 走 `Launcher.run()`，GUI 走 `GUIClient.startWithProcess()`；漏掉这一步的表现是
+    /// classpath 里有 loader 主类、库却不在 → 客户端启动失败（或静默回退成原版）。
+    mutating func downloadFabric(onEvent: (@Sendable (LaunchProgress) -> Void)? = nil) async throws {
+        guard let items = fabricDownloadItems() else { return }
+        let progress = ProgressReporter(
+            console: clientInfo.console,
+            title: "正在下载 Fabric 库文件",
+            observer: onEvent
+        )
+        try await progress.tracking {
+            try await Downloader.download(items, onEvent: progress.update)
+        }
+        clientInfo.console?.success("下载 Fabric 库文件完成")
+    }
+}
