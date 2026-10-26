@@ -6,6 +6,13 @@
 Swift 工具集与 `orzmc` CLI：Minecraft 客户端启动 / 服务端部署的**跨平台实现**
 （macOS / Linux / Windows；Linux 资产自包含、glibc ≥ 2.35）。
 
+**平台下限（有意钉住，别抬）**：macOS **13.0**（Ventura）× `arm64` / `x86_64`。
+本仓库是产品伞里"逻辑层"的代表产物：GUI（`OrzMC.app`）要求 macOS 14（`@Observable`），
+但逻辑层/CLI 保 13，让卡在 Ventura 的 Intel Mac 仍能用 CLI。
+规则、证据与复跑命令见父仓库
+[`docs/platform-support.md`](https://github.com/OrzMC/OrzMC/blob/main/docs/platform-support.md)；
+CI 的 `platform` job 会验「声明下限 = 13」+「native minos ≤ 13」+「x86_64 能编」。
+
 - **引擎库**：`Game`（版本解析、规范布局、下载、托管 JRE、受管进程、启动计划）、`Fabric`。
 - **可执行**：`orzmc` CLI（与 [Python 实现 `orzmc`](https://github.com/OrzMC/OrzPythonMC) 共用
   同一套[命令面规范](https://github.com/OrzMC/OrzMC/blob/main/docs/spec/cli-surface.md)与
