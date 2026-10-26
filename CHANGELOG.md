@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.21.1](https://github.com/OrzMC/OrzMCKit/compare/v0.21.0...v0.21.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **client:** `downloadFabric(onEvent:)` 补 `public`（前端要跨模块调用） ([#101](https://github.com/OrzMC/OrzMCKit/issues/101)) ([16f29d5](https://github.com/OrzMC/OrzMCKit/commit/16f29d56c1dd8aba479897dc27f45fa4361d0060))
+* **client:** 把 `downloadFabric()` 提升为 `Client` 扩展，GUI 也能下载 Fabric 库 ([#99](https://github.com/OrzMC/OrzMCKit/issues/99)) ([cb9ad0b](https://github.com/OrzMC/OrzMCKit/commit/cb9ad0ba5273446f310514fc2fa76468e5fbfa16))
+
 ## [0.21.0](https://github.com/OrzMC/OrzMCKit/compare/v0.20.0...v0.21.0) (2026-10-22)
 
 
