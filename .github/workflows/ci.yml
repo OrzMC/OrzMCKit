@@ -112,6 +112,21 @@ jobs:
             *x86_64*) ;;
             *) echo "::error::Intel 切片缺失($archs)"; exit 1 ;;
           esac
+          mkdir -p /tmp/orzmc-intel
+          cp "$BIN" /tmp/orzmc-intel/orzmc-x86_64
+          lipo -archs /tmp/orzmc-intel/orzmc-x86_64
+          otool -l /tmp/orzmc-intel/orzmc-x86_64 | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print "minos:", $2; exit}'
+
+      # 把 Intel 产物带出来：真机冒烟（macOS 13 + Intel）要用它，见父仓库
+      # `docs/platform-support.md` §6 —— 那边没有 Swift 6 工具链（Ventura 最高 Xcode 15），
+      # **只能**用这里编好的产物去跑。
+      - name: Upload Intel CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orzmc-x86_64-macos13
+          path: /tmp/orzmc-intel/orzmc-x86_64
+          if-no-files-found: error
+          retention-days: 14
 
   # 能力台账校验(两套 CLI 并行期,见父仓库 docs/two-cli-strategy.md):
   # 用**本实现的 capabilities 输出**反向验证 docs/spec/parity.json 里声明的状态
