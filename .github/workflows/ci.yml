@@ -57,6 +57,62 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
+  # 平台下限 + Intel 编译门禁(父仓库 docs/platform-support.md):
+  # 逻辑层(本 CLI + 库)**钉在 macOS 13**,且发布/分发路径要能跑在 Intel 上。
+  # 两件事都做:① 产物 minos 必须 ≤ 13(谁把 platforms 抬到 14 就红);
+  #            ② x86_64 交叉编译(抓 arm64-only 写法;插件是 x86_64 可执行文件,所以要先装 Rosetta)。
+  platform:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Ensure Rosetta 2
+        run: |
+          if arch -x86_64 /usr/bin/true 2>/dev/null; then
+            echo "Rosetta 已安装"
+          else
+            sudo softwareupdate --install-rosetta --agree-to-license
+          fi
+
+      - name: Declared macOS floor must be 13
+        run: |
+          set -euo pipefail
+          floor="$(grep -oE '\.macOS\(\.v[0-9_]+\)' Package.swift | head -1 | grep -oE '[0-9_]+')"
+          echo "声明下限: macOS ${floor//_/.}"
+          [ "$floor" = "13" ] || {
+            echo "::error::逻辑层必须钉 macOS 13(卡在 Ventura 的 Intel Mac 靠 CLI);" \
+                 "改这里要同步父仓库 docs/platform-support.md"
+            exit 1
+          }
+
+      - name: Build CLI (native) and check minos
+        run: |
+          set -euo pipefail
+          swift build --product orzmc --only-use-versions-from-resolved-file
+          BIN="$(swift build --show-bin-path --product orzmc)/orzmc"
+          minos="$(otool -l "$BIN" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}')"
+          echo "orzmc minos = $minos"
+          case "$minos" in
+            1[0-3].*) ;;
+            *) echo "::error::orzmc 的 minos 被抬到 13 以上($minos)" ; exit 1 ;;
+          esac
+
+      - name: Build CLI for Intel (x86_64)
+        run: |
+          set -euo pipefail
+          swift build --product orzmc --arch x86_64 --only-use-versions-from-resolved-file
+          BIN="$(swift build --show-bin-path --arch x86_64 --product orzmc)/orzmc"
+          archs="$(lipo -archs "$BIN")"
+          echo "x86_64 产物架构 = $archs"
+          case "$archs" in
+            *x86_64*) ;;
+            *) echo "::error::Intel 切片缺失($archs)"; exit 1 ;;
+          esac
+
   # 能力台账校验(两套 CLI 并行期,见父仓库 docs/two-cli-strategy.md):
   # 用**本实现的 capabilities 输出**反向验证 docs/spec/parity.json 里声明的状态
   # (标 parity 必须真有该命令,标 na 不许有),防止「台账写得好、实现悄悄漂移」。
