@@ -99,6 +99,15 @@ import Testing
         }
     }
 
+    struct LockCheckingTransport: AuthTransport {
+        let lockPath: String
+
+        func send(_ request: AuthRequest) async throws -> AuthHTTPResponse {
+            #expect(FileManager.default.fileExists(atPath: lockPath))
+            return AuthHTTPResponse(status: 503, body: Data())
+        }
+    }
+
     private func response(_ status: Int, _ json: [String: Any]) -> AuthHTTPResponse {
         let data = (try? JSONSerialization.data(withJSONObject: json)) ?? Data()
         return AuthHTTPResponse(status: status, body: data)
@@ -152,5 +161,62 @@ import Testing
         await #expect(throws: AuthError.self) {
             _ = try await authenticator.ensure()
         }
+    }
+
+    @Test func transientRefreshFailurePreservesSession() async throws {
+        let dir = tempDir()
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let store = AuthStore(stateDir: dir)
+        try store.save(sampleSession, clientId: "cid")
+        let transport = MockTransport([response(503, ["error": "temporarily_unavailable"])])
+        let authenticator = Authenticator(transport: transport, store: store, clientId: "cid", clock: { 20_000 })
+
+        await #expect(throws: AuthError.self) { _ = try await authenticator.ensure() }
+        #expect(store.load()?.msa.refreshToken == "REFRESH")
+        #expect(transport.requests.count == 1)
+    }
+
+    @Test func invalidGrantClearsSessionAndStartsLogin() async throws {
+        let dir = tempDir()
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let store = AuthStore(stateDir: dir)
+        try store.save(sampleSession, clientId: "cid")
+        let transport = MockTransport([
+            response(400, ["error": "invalid_grant"]),
+            response(503, ["error": "temporarily_unavailable"]),
+        ])
+        let authenticator = Authenticator(transport: transport, store: store, clientId: "cid", clock: { 20_000 })
+
+        await #expect(throws: AuthError.self) { _ = try await authenticator.ensure() }
+        #expect(store.load() == nil)
+        #expect(transport.requests.count == 2)
+    }
+
+    @Test func rotatedTokenSurvivesFailureAfterRefresh() async throws {
+        let dir = tempDir()
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let store = AuthStore(stateDir: dir)
+        try store.save(sampleSession, clientId: "cid")
+        let transport = MockTransport([
+            response(200, ["access_token": "NEW_MSA", "refresh_token": "NEW_REFRESH", "expires_in": 3600]),
+            response(503, ["error": "temporarily_unavailable"]),
+        ])
+        let authenticator = Authenticator(transport: transport, store: store, clientId: "cid", clock: { 20_000 })
+
+        await #expect(throws: AuthError.self) { _ = try await authenticator.ensure() }
+        #expect(store.load()?.msa.refreshToken == "NEW_REFRESH")
+        #expect(store.load()?.expiresAt == sampleSession.expiresAt)
+    }
+
+    @Test func refreshUsesTheStoreDirectoryLock() async throws {
+        let dir = tempDir()
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let store = AuthStore(stateDir: dir)
+        try store.save(sampleSession, clientId: "cid")
+        let transport = LockCheckingTransport(lockPath: dir + "/auth.lock")
+        let authenticator = Authenticator(transport: transport, store: store, clientId: "cid", clock: { 20_000 })
+
+        await #expect(throws: AuthError.self) { _ = try await authenticator.ensure() }
+        #expect(!FileManager.default.fileExists(atPath: dir + "/auth.lock"))
     }
 }

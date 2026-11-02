@@ -125,8 +125,8 @@ public struct Authenticator: Sendable {
                     return cached
                 }
                 do {
-                    return try await refresh(target.msa)
-                } catch {
+                    return try await refresh(target.msa, replacing: target)
+                } catch let error as AuthError where error.code == "E_AUTH_EXPIRED" {
                     // refresh token 被拒 → 清掉重登，不吞错（最终 login 的错会抛出）。
                     store.clear()
                 }
@@ -140,7 +140,7 @@ public struct Authenticator: Sendable {
     private func withRefreshLock(
         _ body: (AuthSession?) async throws -> AuthSession
     ) async throws -> AuthSession {
-        var lock = AuthStore.lock()
+        var lock = AuthStore.lock(stateDir: (store.path as NSString).deletingLastPathComponent)
         try lock.acquire()
         defer { lock.release() }
         return try await body(store.load())
@@ -159,12 +159,29 @@ public struct Authenticator: Sendable {
 
     /// 用 MSA `refresh_token` 换新 MSA 令牌，再重走 Xbox 链路。
     public func refresh(_ msa: MsaTokens) async throws -> AuthSession {
+        try await refresh(msa, replacing: nil)
+    }
+
+    private func refresh(_ msa: MsaTokens, replacing previous: AuthSession?) async throws -> AuthSession {
         let response = try await transport.send(
             AuthMapping.tokenRefreshRequest(clientId: clientId, refreshToken: msa.refreshToken)
         )
         guard response.status == 200, let tokens = AuthMapping.tokenResult(response.json(), now: clock()) else {
+            if response.status == 400, response.json()["error"] as? String == "invalid_grant" {
+                throw AuthError(code: "E_AUTH_EXPIRED", message: Self.errorText(response.json()))
+            }
             let action = AuthMapping.classifyTokenError(response.json()["error"] as? String)
-            throw AuthError(code: action.code ?? "E_AUTH_EXPIRED", message: Self.errorText(response.json()))
+            let code = action.code == "E_AUTH_EXPIRED" ? "E_AUTH" : (action.code ?? "E_AUTH")
+            throw AuthError(code: code, message: Self.errorText(response.json()))
+        }
+        // The provider can rotate the refresh token before the remaining Xbox/Minecraft
+        // requests complete. Persist it while holding the refresh lock so a later
+        // transient failure does not leave only the obsolete token on disk.
+        if let previous {
+            let pending = AuthSession(uuid: previous.uuid, name: previous.name,
+                                      accessToken: previous.accessToken, expiresAt: previous.expiresAt,
+                                      msa: tokens, source: previous.source)
+            try store.save(pending, clientId: clientId)
         }
         return try await complete(tokens, source: "refresh")
     }

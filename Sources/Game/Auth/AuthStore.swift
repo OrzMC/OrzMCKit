@@ -1,4 +1,9 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 /// 认证令牌持久化：`<状态目录>/auth.json`（原子写 + 0600）。
 /// 契约见 `docs/spec/auth.md` §5 —— 放在 OrzMC 状态目录、不进游戏根目录、不记录 token。
@@ -66,9 +71,22 @@ public final class AuthStore: @unchecked Sendable {
         let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
         let directory = (path as NSString).deletingLastPathComponent
         try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+        #if os(Windows)
+        // Windows permissions are determined by the parent directory's ACL.
         try data.write(to: URL(fileURLWithPath: path), options: [.atomic])
-        // 令牌文件仅本人可读（POSIX；Windows 无此语义则由 ACL 决定）。
-        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path)
+        #else
+        // Create the temporary file private from its first instant, then atomically replace.
+        let temporaryPath = directory + "/.auth-" + UUID().uuidString
+        let descriptor = open(temporaryPath, O_WRONLY | O_CREAT | O_EXCL, 0o600)
+        guard descriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+        defer { try? FileManager.default.removeItem(atPath: temporaryPath) }
+        let file = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        try file.write(contentsOf: data)
+        try file.close()
+        guard rename(temporaryPath, path) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        #endif
     }
 
     public func clear() {
