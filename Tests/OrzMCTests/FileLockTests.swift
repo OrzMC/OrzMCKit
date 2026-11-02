@@ -50,13 +50,14 @@ import Testing
         let dir = tempDir()
         let path = dir + "/auth.lock"
         try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: false)
-        // 把目录 mtime 拨老 31s（陈旧判定读的是 mtime）
-        let old = Date().addingTimeInterval(-31)
-        try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: path)
-
-        var lock = FileLock(path: path, timeout: 1)
+        // Windows may refuse changing a directory's mtime; advance the injected
+        // clock relative to the actual mtime instead, exercising the same predicate.
+        let attributes = try FileManager.default.attributesOfItem(atPath: path)
+        let modified = try #require(attributes[.modificationDate] as? Date)
+        var lock = FileLock(path: path, timeout: 1, clock: { modified.timeIntervalSince1970 + 31 })
         try lock.acquire()
         #expect(FileManager.default.fileExists(atPath: path))
+        #expect(FileManager.default.fileExists(atPath: path + "/owner"), "应获取新锁而非保留旧目录")
         lock.release()
     }
 
